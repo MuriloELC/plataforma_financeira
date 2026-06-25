@@ -174,7 +174,23 @@ Validacao:
 - testes validam justificativa obrigatoria para tecnologia e aporte minimo.
 
 ### Fase 9 - Frontend MVP
-Status: aberta
+Status: concluida
+
+Entregaveis:
+- frontend Next.js funcional em `frontend/app/page.tsx`;
+- dashboard financeiro consumindo endpoints Gold e historico real;
+- telas de importacao, revisao de importacoes, lancamentos manuais, investimentos manuais, cartoes/faturas, indicadores Gold, simulador e historico de decisoes;
+- formularios conectados a API para upload, preview/aprovacao, cadastros manuais, refresh Gold e simulacao de compra;
+- estados de carregamento, erro, vazio e mensagens de validacao retornadas pela API;
+- CORS configuravel no backend para permitir o frontend local;
+- dependencias frontend auditadas com `next@16.2.9` e override de `postcss@8.5.10`.
+
+Validacao:
+- `npm audit --omit=dev` passa sem vulnerabilidades;
+- `npm run build` passa no frontend;
+- `RUN_DB_TESTS=1 pytest` passa no container com 51 testes;
+- Playwright carregou `http://localhost:3000` e validou as abas principais;
+- frontend consome API real em `http://localhost:8000` sem erro de CORS.
 
 ## Épico 0 — Bootstrap
 
@@ -430,8 +446,13 @@ Implemente gold.reserve_status: média de gastos dos últimos 3 meses × 6, usan
 ```
 
 ### 6.4 Dashboard inicial
-Status: aberta
+Status: concluida
 Depende de: 6.1, 6.2, 6.3
+
+Resultado:
+- dashboard inicial implementado no frontend;
+- mostra renda passiva, progresso R$ 100 mil, reserva, alocacao e compromissos/alertas Gold;
+- dados sao carregados dos endpoints reais da API.
 
 Prompt:
 ```text
@@ -470,8 +491,14 @@ Implemente motor determinístico do “Posso Comprar?”. Tecnologia acima de R$
 ```
 
 ### 7.3 Tela do simulador
-Status: aberta
+Status: concluida
 Depende de: 7.2
+
+Resultado:
+- tela do simulador implementada no frontend;
+- formulario envia dados para `POST /purchase-decisions/simulate`;
+- resultado exibe veredito, explicacao e impactos retornados pelo backend;
+- historico de decisoes e carregado de `GET /purchase-decisions`.
 
 Prompt:
 ```text

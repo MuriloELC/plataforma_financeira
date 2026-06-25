@@ -11,6 +11,7 @@ def _env(name: str, default: str) -> str:
 @dataclass(frozen=True)
 class Settings:
     app_env: str
+    cors_allow_origins: tuple[str, ...]
     database_url: str
     file_storage_path: str
 
@@ -29,6 +30,14 @@ class Settings:
 
         return cls(
             app_env=_env("APP_ENV", "local"),
+            cors_allow_origins=tuple(
+                origin.strip()
+                for origin in _env(
+                    "CORS_ALLOW_ORIGINS",
+                    "http://localhost:3000,http://127.0.0.1:3000",
+                ).split(",")
+                if origin.strip()
+            ),
             database_url=database_url,
             file_storage_path=_env("FILE_STORAGE_PATH", "./storage"),
         )

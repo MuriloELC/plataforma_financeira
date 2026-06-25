@@ -1,5 +1,17 @@
 # CHANGELOG
 
+## 0.11.0 - Frontend MVP
+
+- Implementado frontend MVP em Next.js consumindo a API real.
+- Adicionadas telas de dashboard financeiro, importacao, revisao, lancamentos, investimentos, cartoes/faturas, indicadores Gold, simulador e historico.
+- Conectados formularios a upload Bronze, preview/aprovacao de importacao, cadastros manuais, refresh Gold e simulacao de compra.
+- Adicionados estados de carregamento, erro, vazio e exibicao de mensagens de validacao da API.
+- Configurado CORS no backend para liberar o frontend local de forma configuravel.
+- Atualizado `NEXT_PUBLIC_API_BASE_URL` e `CORS_ALLOW_ORIGINS` no ambiente de exemplo.
+- Atualizado Next.js para `16.2.9` e aplicado override de `postcss@8.5.10`.
+- Adicionado teste automatizado de preflight CORS em `/health`.
+- Validado build do frontend, audit npm, testes backend e navegacao das abas principais com Playwright.
+
 ## 0.10.0 - Simulador Posso Comprar
 
 - Adicionado endpoint `POST /purchase-decisions/simulate`.
