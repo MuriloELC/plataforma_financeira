@@ -9,11 +9,14 @@ from app.schemas.ingestion import (
     ImportBatchDetail,
     RawFileSummary,
 )
+from app.schemas.import_review import ImportApprovalResponse
+from app.parsers.base import ParsedDocument
 from app.services.bronze_ingestion import (
     BronzeIngestionError,
     BronzeIngestionService,
     UnsupportedFileTypeError,
 )
+from app.services.import_review import ImportReviewError, ImportReviewService
 
 router = APIRouter(tags=["files"])
 
@@ -64,3 +67,27 @@ def get_import_batch(
     if batch is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Import batch not found.")
     return batch
+
+
+@router.get("/import-batches/{batch_id}/preview", response_model=ParsedDocument)
+def preview_import_batch(
+    batch_id: UUID,
+    session: Session = Depends(get_db_session),
+) -> ParsedDocument:
+    service = ImportReviewService(session=session)
+    try:
+        return service.preview_import(batch_id=batch_id)
+    except ImportReviewError as exc:
+        raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail=str(exc)) from exc
+
+
+@router.post("/import-batches/{batch_id}/approve", response_model=ImportApprovalResponse)
+def approve_import_batch(
+    batch_id: UUID,
+    session: Session = Depends(get_db_session),
+) -> ImportApprovalResponse:
+    service = ImportReviewService(session=session)
+    try:
+        return service.approve_import(batch_id=batch_id)
+    except ImportReviewError as exc:
+        raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail=str(exc)) from exc

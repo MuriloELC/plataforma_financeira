@@ -322,6 +322,23 @@ class SicoobCardInvoicePdfParser(_SicoobPdfParser):
                 continue
             body = line[7:]
             amount = last_money(body)
+            due_date = self._due_date(lines)
+            purchase_day = int(line[:2])
+            purchase_month_token = normalize_text(line[3:6])
+            purchase_month = {
+                "jan": 1,
+                "fev": 2,
+                "mar": 3,
+                "abr": 4,
+                "mai": 5,
+                "jun": 6,
+                "jul": 7,
+                "ago": 8,
+                "set": 9,
+                "out": 10,
+                "nov": 11,
+                "dez": 12,
+            }[purchase_month_token]
             money_match = list(re.finditer(r"R\$\s*[\d.,]+", body))
             body_before_amount = body[: money_match[-1].start()].strip() if money_match else body
             installment_match = installment_pattern.search(body_before_amount)
@@ -334,6 +351,7 @@ class SicoobCardInvoicePdfParser(_SicoobPdfParser):
                 installment_total = int(installment_match.group("total"))
 
             data = {
+                "purchase_date": f"{due_date.year:04d}-{purchase_month:02d}-{purchase_day:02d}",
                 "description": description,
                 "amount": amount,
                 "installment_number": installment_number,

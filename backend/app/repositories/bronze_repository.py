@@ -319,6 +319,18 @@ class BronzeRepository:
         ).mappings().one()
         return dict(row)
 
+    def mark_import_batch_parser(self, *, batch_id: UUID, parser_name: str) -> None:
+        self.session.execute(
+            text(
+                """
+                update bronze.import_batches
+                set parser_name = :parser_name
+                where id = :batch_id
+                """
+            ),
+            {"batch_id": batch_id, "parser_name": parser_name},
+        )
+
     def add_file_metadata(
         self,
         *,

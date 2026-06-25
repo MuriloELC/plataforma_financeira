@@ -76,6 +76,31 @@ Validacao:
 - nenhum parser usa dados financeiros reais versionados.
 
 ### Fase 5 - Silver
+Status: concluida
+
+Entregaveis:
+- registry de parsers por `source_type`;
+- endpoint `GET /import-batches/{id}/preview`;
+- endpoint `POST /import-batches/{id}/approve`;
+- normalizacao idempotente para Silver a partir de importacoes aprovadas;
+- persistencia em `silver.cash_transactions`;
+- persistencia em `silver.card_invoices`, `silver.card_transactions` e `silver.installments`;
+- persistencia em `silver.investment_assets`, `silver.investment_positions`, `silver.investment_income` e `silver.investment_trades`;
+- persistencia em `silver.manual_investment_positions` para CDB manual importado por CSV;
+- persistencia em `silver.payroll_statements`, `silver.payroll_earnings` e `silver.payroll_deductions`;
+- status `approved_to_silver` e `parser_name` registrados em `bronze.import_batches`;
+- testes de idempotencia e regras criticas em `backend/tests/test_silver_normalization.py`.
+
+Validacao:
+- `pytest` local passa com 19 testes ativos e 19 integracoes puladas;
+- `RUN_DB_TESTS=1 pytest` passa no container com 38 testes;
+- reaprovar o mesmo `import_batch` nao duplica registros Silver;
+- pagamento de fatura e transferencia propria nao entram como gasto comum;
+- renda fixa B3 importada nao entra como reserva;
+- parcelas de cartao geram registros futuros em `silver.installments`;
+- nenhum dado e gravado em Gold nesta fase.
+
+### Fase 6 - Cadastro manual
 Status: aberta
 
 ## Épico 0 — Bootstrap
@@ -174,8 +199,14 @@ Implemente MercadoLivreCsvParser. Ele deve identificar bloco de resumo e movimen
 ```
 
 ### 2.2 Persistir cash_transactions
-Status: aberta
+Status: concluida
 Depende de: 2.1
+
+Resultado:
+- `silver.cash_transactions` recebe transacoes aprovadas de Mercado Livre e Sicoob conta;
+- registros mantem `source_file_id`, `import_batch_id` e `raw_reference`;
+- pagamento de fatura recebe `transaction_type = card_payment`;
+- transferencia para investimento recebe `is_transfer = true`.
 
 Prompt:
 ```text
@@ -185,7 +216,12 @@ Crie silver.cash_transactions e grave transações validadas mantendo source_fil
 ## Épico 3 — Investimentos
 
 ### 3.1 Modelos de investimentos
-Status: aberta
+Status: concluida
+
+Resultado:
+- modelos/tabelas criados por migration na Fase 2;
+- normalizacao Silver cria ativos, posicoes, proventos e negociacoes na Fase 5;
+- renda fixa B3 fica com `counts_as_reserve = false`.
 
 Prompt:
 ```text
@@ -246,7 +282,11 @@ Implemente app.categorization_rules e serviço de sugestão por padrão textual,
 ## Épico 5 — Cartões
 
 ### 5.1 Modelar cartões/faturas/parcelas
-Status: aberta
+Status: concluida
+
+Resultado:
+- tabelas criadas por migration na Fase 2;
+- normalizacao Silver grava fatura, compras de cartao e parcelas futuras a partir da fatura Sicoob.
 
 Prompt:
 ```text

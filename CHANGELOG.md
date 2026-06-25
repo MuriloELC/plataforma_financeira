@@ -1,5 +1,19 @@
 # CHANGELOG
 
+## 0.7.0 - Normalizacao Silver
+
+- Adicionado registry de parsers por `source_type`.
+- Adicionado endpoint `GET /import-batches/{id}/preview`.
+- Adicionado endpoint `POST /import-batches/{id}/approve`.
+- Implementada normalizacao idempotente de importacoes Bronze aprovadas para Silver.
+- Gravadas transacoes de caixa em `silver.cash_transactions` preservando origem.
+- Gravadas faturas, compras de cartao e parcelas futuras em tabelas Silver.
+- Gravadas posicoes, proventos e negociacoes de investimentos em tabelas Silver.
+- Gravados contracheques em `silver.payroll_statements`, `silver.payroll_earnings` e `silver.payroll_deductions`.
+- Registrado `approved_to_silver` e `parser_name` em `bronze.import_batches`.
+- Adicionados testes de idempotencia e regras criticas Silver.
+- Mantida a restricao de nao gravar em Gold nesta fase.
+
 ## 0.6.0 - Parsers do MVP
 
 - Adicionada infraestrutura comum de parsers com `ParserProtocol`, `ParsedDocument`, `ParsedRecord` e `ParserError`.
