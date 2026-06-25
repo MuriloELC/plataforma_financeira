@@ -8,6 +8,27 @@
 - Atualizar TASKS.md e CHANGELOG.md.
 - Não inventar requisitos.
 
+## Fases do MVP continuado
+
+### Fase 2 - Modelo de dados inicial
+Status: concluida
+
+Entregaveis:
+- migration Alembic `20260625_0002_create_initial_data_model`;
+- tabelas iniciais em `bronze`, `silver`, `gold` e `app`;
+- preservacao do schema `audit`;
+- contrato de schema em `backend/app/db/schema_contract.py`;
+- script `backend/scripts/check_schema.py`;
+- teste `backend/tests/test_schema_contract.py`.
+
+Validacao:
+- migrations rodam do zero via Docker Compose;
+- `python scripts/check_schema.py` retorna `Database schema OK`;
+- `RUN_DB_TESTS=1 pytest` passa no container.
+
+### Fase 3 - Ingestao Bronze
+Status: aberta
+
 ## Épico 0 — Bootstrap
 
 ### 0.1 Criar estrutura base

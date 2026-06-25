@@ -1,5 +1,15 @@
 # CHANGELOG
 
+## 0.4.0 - Modelo de dados inicial
+
+- Adicionada migration Alembic `20260625_0002_create_initial_data_model`.
+- Criadas tabelas iniciais em `bronze`, `silver`, `gold` e `app`.
+- Mantido o schema `audit` criado na fundacao.
+- Adicionado contrato de schema em `backend/app/db/schema_contract.py`.
+- Adicionado script `backend/scripts/check_schema.py` para validar estrutura do banco.
+- Adicionado teste `backend/tests/test_schema_contract.py`.
+- Validado `alembic upgrade head` em banco limpo via Docker Compose.
+
 ## 0.3.0 - Fundacao executavel
 
 - Criada estrutura inicial do backend com FastAPI.
