@@ -1,5 +1,17 @@
 # CHANGELOG
 
+## 0.5.0 - Ingestao Bronze
+
+- Adicionado endpoint `POST /files/upload` para registrar CSV, XLSX e PDF no Bronze.
+- Adicionados endpoints `GET /files` e `GET /import-batches/{id}`.
+- Adicionado calculo de hash SHA-256 e deteccao de duplicidade por hash.
+- Adicionada deteccao inicial de fonte provavel para Mercado Livre, B3, Sicoob e CSV manual.
+- Adicionada persistencia de metadados e conteudo bruto em tabelas Bronze.
+- Adicionada extracao bruta de CSV, XLSX e PDF sem gravar dados em Silver ou Gold.
+- Adicionado registro controlado de erros de extracao em `bronze.parser_errors`.
+- Adicionados testes de integracao para upload valido, duplicidade, CSV, XLSX, PDF e extensao invalida.
+- Montadas fixtures anonimizadas no container backend somente para testes.
+
 ## 0.4.0 - Modelo de dados inicial
 
 - Adicionada migration Alembic `20260625_0002_create_initial_data_model`.

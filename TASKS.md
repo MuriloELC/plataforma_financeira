@@ -27,6 +27,30 @@ Validacao:
 - `RUN_DB_TESTS=1 pytest` passa no container.
 
 ### Fase 3 - Ingestao Bronze
+Status: concluida
+
+Entregaveis:
+- endpoint `POST /files/upload` para CSV, XLSX e PDF;
+- endpoint `GET /files` para listar arquivos Bronze;
+- endpoint `GET /import-batches/{id}` para consultar lote de importacao;
+- calculo de hash SHA-256;
+- deteccao inicial de fonte provavel alinhada aos parsers do MVP;
+- deteccao de duplicidade por hash;
+- armazenamento local seguro em `FILE_STORAGE_PATH`;
+- persistencia em `bronze.raw_files`, `bronze.import_batches` e `bronze.raw_file_metadata`;
+- extracao bruta em `bronze.raw_csv_rows`, `bronze.raw_sheet_data`, `bronze.raw_xlsx_rows`, `bronze.raw_pdf_text` e `bronze.raw_pdf_pages`;
+- registro de erro controlado em `bronze.parser_errors` quando a extracao bruta falhar;
+- testes de integracao em `backend/tests/test_bronze_ingestion.py`.
+
+Validacao:
+- `docker compose up --build -d` sobe Postgres e backend;
+- `alembic current` retorna `20260625_0002 (head)`;
+- `python scripts/check_schema.py` retorna `Database schema OK`;
+- `GET /health` retorna `{"status":"ok","service":"finance-decision-backend"}`;
+- `RUN_DB_TESTS=1 pytest` passa no container com 8 testes;
+- testes usam apenas `fixtures/anonymized`.
+
+### Fase 4 - Parsers
 Status: aberta
 
 ## Épico 0 — Bootstrap
@@ -63,8 +87,14 @@ Configure SQLAlchemy 2 e Alembic. Crie migration inicial com os schemas do DATA_
 ## Épico 1 — Bronze e upload
 
 ### 1.1 Criar raw_files e import_batches
-Status: aberta
+Status: concluida
 Depende de: 0.2
+
+Resultado:
+- tabelas criadas por Alembic na Fase 2;
+- repositorio Bronze implementado em `backend/app/repositories/bronze_repository.py`;
+- schemas de resposta implementados em `backend/app/schemas/ingestion.py`;
+- cobertura de integracao adicionada em `backend/tests/test_bronze_ingestion.py`.
 
 Prompt:
 ```text
@@ -72,8 +102,15 @@ Implemente bronze.raw_files e bronze.import_batches com migrations, models, sche
 ```
 
 ### 1.2 Upload com hash
-Status: aberta
+Status: concluida
 Depende de: 1.1
+
+Resultado:
+- `POST /files/upload` implementado;
+- storage local via `FILE_STORAGE_PATH`;
+- SHA-256 calculado;
+- duplicidade por hash implementada;
+- `import_batch` criado para upload novo e upload duplicado.
 
 Prompt:
 ```text
@@ -81,8 +118,14 @@ Implemente POST /files/upload com storage local, SHA-256, detecção de duplicid
 ```
 
 ### 1.3 Bronze bruto CSV/XLSX/PDF
-Status: aberta
+Status: concluida
 Depende de: 1.2
+
+Resultado:
+- CSV bruto salvo em `bronze.raw_csv_rows`;
+- XLSX bruto salvo em `bronze.raw_sheet_data` e `bronze.raw_xlsx_rows`;
+- PDF bruto salvo em `bronze.raw_pdf_text` e `bronze.raw_pdf_pages`;
+- parser semantico e Silver/Gold continuam fora desta fase.
 
 Prompt:
 ```text

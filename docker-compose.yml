@@ -24,8 +24,11 @@ services:
       APP_ENV: ${APP_ENV:-local}
       DATABASE_URL: postgresql+psycopg://${POSTGRES_USER:-finance_user}:${POSTGRES_PASSWORD:-change_me}@postgres:5432/${POSTGRES_DB:-finance_decision}
       FILE_STORAGE_PATH: /app/storage
+      FIXTURES_PATH: /fixtures
     ports:
       - "${BACKEND_PORT:-8000}:8000"
+    volumes:
+      - ./fixtures:/fixtures:ro
     depends_on:
       postgres:
         condition: service_healthy

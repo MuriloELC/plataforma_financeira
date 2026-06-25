@@ -1,8 +1,11 @@
 alembic==1.17.2
 fastapi==0.124.4
 httpx==0.28.1
+openpyxl==3.1.5
 psycopg[binary]==3.3.2
 pydantic==2.12.5
+pypdf==5.1.0
 pytest==9.0.2
+python-multipart==0.0.20
 SQLAlchemy==2.0.45
 uvicorn[standard]==0.38.0
