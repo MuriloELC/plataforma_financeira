@@ -1,0 +1,16 @@
+{
+  "source_type": "manual_investment_csv",
+  "positions": [
+    {
+      "institution": "Mercado Livre",
+      "product": "CDB Mercado Livre",
+      "asset_class": "cdb",
+      "gross_value": 4052.64,
+      "accumulated_yield": 6.59,
+      "rate": "102% do CDI",
+      "liquidity": "same_day",
+      "maturity_date": "2028-06-12",
+      "counts_as_reserve": true
+    }
+  ]
+}

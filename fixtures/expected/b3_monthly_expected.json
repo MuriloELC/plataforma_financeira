@@ -1,0 +1,15 @@
+{
+  "source_type": "b3_monthly_consolidated_xlsx",
+  "reference_month": "2026-05",
+  "positions_by_class": {
+    "acao": 956.8,
+    "etf": 719.65,
+    "renda_fixa": 1183.01
+  },
+  "income_received_total": 4.0,
+  "trades_count": 3,
+  "rules": {
+    "b3_is_official_for_listed_assets": true,
+    "b3_fixed_income_counts_as_reserve": false
+  }
+}

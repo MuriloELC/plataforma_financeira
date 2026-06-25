@@ -1,0 +1,11 @@
+{
+  "source_type": "b3_annual_consolidated_xlsx",
+  "reference_year": "2025",
+  "positions_by_class": {
+    "acao": 404.51,
+    "renda_fixa": 1116.53
+  },
+  "rules": {
+    "annual_report_is_snapshot": true
+  }
+}

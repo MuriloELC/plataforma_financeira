@@ -1,0 +1,26 @@
+{
+  "source_type": "mercado_livre_account_statement_csv",
+  "summary": {
+    "initial_balance": 41.83,
+    "credits": 0.19,
+    "debits": -23.56,
+    "final_balance": 18.46
+  },
+  "records_count": 17,
+  "sample_records": [
+    {
+      "date": "2026-05-06",
+      "type": "payment",
+      "description": "Pagamento com QR Pix MERCHANT_SAMPLE LTDA.",
+      "amount": -23.56,
+      "partial_balance": 18.33
+    },
+    {
+      "date": "2026-05-04",
+      "type": "financial_yield",
+      "description": "Rendimentos",
+      "amount": 0.03,
+      "partial_balance": 41.86
+    }
+  ]
+}

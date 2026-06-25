@@ -1,0 +1,27 @@
+{
+  "source_type": "sicoob_card_invoice_pdf",
+  "reference_month": "2026-06",
+  "due_date": "2026-06-11",
+  "total_amount": 1779.79,
+  "minimum_payment": 287.79,
+  "credit_limit": 7000.0,
+  "used_limit": 2889.56,
+  "available_limit": 4110.44,
+  "future_debt_total": 4608.03,
+  "next_invoice_installments": 545.01,
+  "purchases_count": 10,
+  "installment_examples": [
+    {
+      "description": "CENTAURO CE46",
+      "installment_number": 4,
+      "installment_total": 8,
+      "amount": 156.25
+    },
+    {
+      "description": "MERCADOLIVRE*MERCADO",
+      "installment_number": 1,
+      "installment_total": 4,
+      "amount": 193.6
+    }
+  ]
+}

@@ -1,0 +1,21 @@
+{
+  "source_type": "sicoob_investments_pdf",
+  "period_start": "2026-05-01",
+  "period_end": "2026-05-31",
+  "positions": [
+    {
+      "product": "SICOOB AÇÕES",
+      "gross_value": 540.06,
+      "net_value": 534.06,
+      "period_gross_yield": -38.3,
+      "counts_as_reserve": false
+    },
+    {
+      "product": "SICOOB REFERENCIADO DI",
+      "gross_value": 422.8,
+      "net_value": 420.76,
+      "period_gross_yield": 4.5,
+      "counts_as_reserve": true
+    }
+  ]
+}

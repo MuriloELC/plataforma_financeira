@@ -1,0 +1,45 @@
+{
+  "source_type": "sicoob_payroll_pdf",
+  "competence_month": "2026-05",
+  "payment_date": "2026-06-01",
+  "gross_income": 3482.88,
+  "net_income": 2912.78,
+  "total_deductions": 570.1,
+  "fgts_amount": 278.2,
+  "earnings": [
+    {
+      "description": "Salário Mensal",
+      "amount": 3010.52
+    },
+    {
+      "description": "Gratificação Matriz",
+      "amount": 376.32
+    },
+    {
+      "description": "Hora Extra 50%",
+      "amount": 74.36
+    },
+    {
+      "description": "D.S.R. s/ Hora Extra",
+      "amount": 21.68
+    }
+  ],
+  "deductions": [
+    {
+      "description": "I.N.S.S.",
+      "amount": 305.88
+    },
+    {
+      "description": "Desconto de atrasos",
+      "amount": 5.39
+    },
+    {
+      "description": "Sicoob Previ - Contribuição",
+      "amount": 104.32
+    },
+    {
+      "description": "Assistência Médica Titular",
+      "amount": 154.51
+    }
+  ]
+}

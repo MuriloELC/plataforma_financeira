@@ -1,0 +1,13 @@
+{
+  "source_type": "sicoob_checking_statement_pdf",
+  "period_start": "2026-06-01",
+  "period_end": "2026-06-19",
+  "final_balance": 10613.62,
+  "transactions_count_min": 12,
+  "future_transactions_count": 3,
+  "reconciliation_hint": {
+    "payroll_credit": 2912.78,
+    "card_payment": -1779.79,
+    "investment_transfer": -500.0
+  }
+}
