@@ -13,8 +13,13 @@ from app.main import create_app
 
 TABLES = (
     "app.audit_logs",
+    "app.categorization_rules",
     "app.goals",
     "app.categories",
+    "silver.installments",
+    "silver.card_transactions",
+    "silver.card_invoices",
+    "silver.cards",
     "silver.cash_transactions",
     "silver.manual_investment_positions",
     "silver.accounts",
@@ -57,7 +62,7 @@ def test_categories_crud_writes_audit_logs(client: TestClient) -> None:
 
     listed = client.get("/categories")
     assert listed.status_code == 200
-    assert listed.json()[0]["name"] == "Tecnologia"
+    assert any(item["name"] == "Tecnologia" for item in listed.json())
 
     updated = client.patch(f"/categories/{category_id}", json={"name": "Tecnologia e Software"})
     assert updated.status_code == 200
@@ -67,6 +72,55 @@ def test_categories_crud_writes_audit_logs(client: TestClient) -> None:
     assert deleted.status_code == 204
     assert scalar(
         "select count(*) from app.audit_logs where entity_table = 'categories'"
+    ) == 3
+
+
+def test_default_categories_and_categorization_rules_preview(client: TestClient) -> None:
+    categories = client.get("/categories")
+    assert categories.status_code == 200
+    names = {item["name"] for item in categories.json()}
+    assert {"Tecnologia", "Nao classificado", "Renda passiva"}.issubset(names)
+    technology_id = next(item["id"] for item in categories.json() if item["name"] == "Tecnologia")
+
+    rule = client.post(
+        "/categorization-rules",
+        json={
+            "pattern": "notebook",
+            "match_type": "contains",
+            "category_id": technology_id,
+            "priority": 1,
+            "confidence_score": "0.9500",
+        },
+    )
+    assert rule.status_code == 201, rule.text
+    rule_id = rule.json()["id"]
+
+    preview = client.post(
+        "/categorize/preview",
+        json={"description": "Compra notebook trabalho", "transaction_type": "cash"},
+    )
+    assert preview.status_code == 200, preview.text
+    assert preview.json()["category_name"] == "Tecnologia"
+    assert preview.json()["matched_rule_id"] == rule_id
+    assert preview.json()["needs_review"] is False
+
+    updated = client.patch(f"/categorization-rules/{rule_id}", json={"confidence_score": "0.6000"})
+    assert updated.status_code == 200
+    low_confidence = client.post(
+        "/categorize/preview",
+        json={"description": "Compra notebook trabalho", "transaction_type": "cash"},
+    )
+    assert low_confidence.json()["needs_review"] is True
+
+    unmatched = client.post("/categorize/preview", json={"description": "Descricao sem regra"})
+    assert unmatched.status_code == 200
+    assert unmatched.json()["category_name"] == "Nao classificado"
+    assert unmatched.json()["needs_review"] is True
+
+    deleted = client.delete(f"/categorization-rules/{rule_id}")
+    assert deleted.status_code == 204
+    assert scalar(
+        "select count(*) from app.audit_logs where entity_table = 'categorization_rules'"
     ) == 3
 
 
@@ -203,3 +257,63 @@ def test_manual_investments_crud_preserves_reserve_flag(client: TestClient) -> N
     assert scalar(
         "select count(*) from app.audit_logs where entity_table = 'manual_investment_positions'"
     ) == 4
+
+
+def test_cards_invoices_and_installments_crud(client: TestClient) -> None:
+    card = client.post(
+        "/cards",
+        json={
+            "institution": "Sicoob",
+            "card_name": "Cartao Manual",
+            "brand": "Visa",
+            "last_four_digits": "1234",
+            "credit_limit": "5000.00",
+        },
+    )
+    assert card.status_code == 201, card.text
+    card_id = card.json()["id"]
+
+    invoice = client.post(
+        "/card-invoices",
+        json={
+            "card_id": card_id,
+            "reference_month": "2026-06-01",
+            "due_date": "2026-07-10",
+            "total_amount": "300.00",
+            "minimum_payment": "50.00",
+            "status": "open",
+        },
+    )
+    assert invoice.status_code == 201, invoice.text
+    invoice_id = invoice.json()["id"]
+
+    transaction = client.post(
+        f"/card-invoices/{invoice_id}/transactions",
+        json={
+            "purchase_date": "2026-06-15",
+            "description_raw": "Compra parcelada anonima",
+            "amount": "100.00",
+            "installment_number": 1,
+            "installment_total": 3,
+        },
+    )
+    assert transaction.status_code == 201, transaction.text
+    assert transaction.json()["is_installment"] is True
+
+    assert scalar("select count(*) from silver.installments") == 3
+    assert scalar("select coalesce(sum(installment_amount), 0) from silver.installments") == 300
+
+    updated = client.patch(f"/card-invoices/{invoice_id}", json={"status": "closed"})
+    assert updated.status_code == 200
+    assert updated.json()["status"] == "closed"
+
+    invoices = client.get("/card-invoices")
+    assert invoices.status_code == 200
+    assert len(invoices.json()) == 1
+
+    deleted = client.delete(f"/card-invoices/{invoice_id}")
+    assert deleted.status_code == 204
+    assert scalar("select count(*) from silver.installments") == 0
+    assert scalar(
+        "select count(*) from app.audit_logs where entity_table in ('cards', 'card_invoices', 'card_transactions')"
+    ) == 5

@@ -27,6 +27,10 @@ class UnsupportedFileTypeError(BronzeIngestionError):
     pass
 
 
+class UploadTooLargeError(BronzeIngestionError):
+    pass
+
+
 def _safe_error_message(exc: Exception) -> str:
     return f"{exc.__class__.__name__}: raw extraction failed"
 
@@ -54,6 +58,10 @@ class BronzeIngestionService:
     ) -> FileUploadResponse:
         if not content:
             raise BronzeIngestionError("Uploaded file is empty.")
+        if len(content) > self.settings.max_upload_size_bytes:
+            raise UploadTooLargeError(
+                f"Uploaded file exceeds the configured limit of {self.settings.max_upload_size_bytes} bytes."
+            )
 
         extension = Path(filename).suffix.lower()
         if extension not in SUPPORTED_EXTENSIONS:

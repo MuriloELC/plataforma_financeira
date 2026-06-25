@@ -26,6 +26,7 @@ services:
       FILE_STORAGE_PATH: /app/storage
       FIXTURES_PATH: /fixtures
       CORS_ALLOW_ORIGINS: ${CORS_ALLOW_ORIGINS:-http://localhost:3000,http://127.0.0.1:3000}
+      MAX_UPLOAD_SIZE_BYTES: ${MAX_UPLOAD_SIZE_BYTES:-20971520}
     ports:
       - "${BACKEND_PORT:-8000}:8000"
     volumes:

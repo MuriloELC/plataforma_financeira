@@ -1,8 +1,11 @@
 from datetime import datetime
+from pathlib import PurePath, PureWindowsPath
 from typing import Any
 from uuid import UUID
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, field_validator
+
+from app.core.privacy import mask_sensitive_text
 
 
 class RawFileSummary(BaseModel):
@@ -18,6 +21,18 @@ class RawFileSummary(BaseModel):
     uploaded_at: datetime
     status: str
     metadata: dict[str, Any] = Field(default_factory=dict)
+
+    @field_validator("original_filename")
+    @classmethod
+    def mask_original_filename(cls, value: str) -> str:
+        return mask_sensitive_text(value)
+
+    @field_validator("stored_path")
+    @classmethod
+    def expose_safe_stored_filename(cls, value: str) -> str:
+        posix_name = PurePath(value).name
+        windows_name = PureWindowsPath(value).name
+        return windows_name if len(windows_name) < len(posix_name) else posix_name
 
 
 class ImportBatchSummary(BaseModel):

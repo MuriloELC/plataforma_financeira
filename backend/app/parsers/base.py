@@ -7,6 +7,8 @@ from uuid import UUID
 
 from pydantic import BaseModel, Field
 
+from app.core.privacy import mask_sensitive_text, mask_sensitive_value
+
 
 class ParserError(Exception):
     def __init__(
@@ -23,8 +25,8 @@ class ParserError(Exception):
     def to_dict(self) -> dict[str, Any]:
         return {
             "code": self.code,
-            "message": self.message,
-            "raw_reference": self.raw_reference,
+            "message": mask_sensitive_text(self.message),
+            "raw_reference": mask_sensitive_value(self.raw_reference),
         }
 
 

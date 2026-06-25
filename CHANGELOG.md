@@ -1,5 +1,22 @@
 # CHANGELOG
 
+## 0.12.0 - Qualidade final do MVP
+
+- Adicionado mascaramento centralizado para CPF, conta e endereco em `backend/app/core/privacy.py`.
+- Adicionada validacao de upload para arquivo vazio, extensao nao suportada e limite configuravel `MAX_UPLOAD_SIZE_BYTES`.
+- Ajustadas respostas de arquivos para nao expor caminho local completo e mascarar CPF no nome exibido.
+- Adicionada migration `20260625_0003_add_categorization_rules_and_seed_categories`.
+- Seedadas categorias iniciais do DATA_MODEL de forma idempotente.
+- Adicionados endpoints `/categorization-rules` e `/categorize/preview` para categorizacao deterministica.
+- Adicionados endpoints `/cards`, `/card-invoices` e `/card-invoices/{id}/transactions`.
+- Compras manuais de cartao parceladas passam a gerar `silver.installments`.
+- Adicionados testes de upload seguro, mascaramento, categorizacao, faturas manuais e parcelas.
+- Criado script `backend/scripts/validate_mvp_flow.py` para validar o fluxo principal do MVP.
+- Tornado `scripts/validate_private_fixtures.py` seguro, exibindo apenas contagens e totais.
+- Criadas documentacoes `docs/USAGE.md`, `docs/ADDING_PARSER.md` e `docs/FINAL_REVIEW_CHECKLIST.md`.
+- Atualizado README com estado do MVP, comandos locais e comandos de validacao.
+- Validado `RUN_DB_TESTS=1 pytest` com 57 testes, migrations do zero, audit/build frontend e navegacao Playwright.
+
 ## 0.11.0 - Frontend MVP
 
 - Implementado frontend MVP em Next.js consumindo a API real.

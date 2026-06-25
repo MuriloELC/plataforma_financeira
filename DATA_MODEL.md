@@ -128,6 +128,21 @@ Categorias iniciais:
 - Outros
 - Não classificado
 
+### app.categorization_rules
+
+| Campo | Tipo |
+|---|---|
+| id | uuid |
+| pattern | text |
+| match_type | text |
+| category_id | uuid |
+| transaction_type | text null |
+| priority | integer |
+| confidence_score | numeric(5,4) |
+| is_active | boolean |
+| created_at | timestamptz |
+| updated_at | timestamptz |
+
 ### app.settings
 
 | Campo | Tipo |

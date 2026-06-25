@@ -12,9 +12,22 @@ from app.schemas.manual import (
     CategoryCreate,
     CategoryResponse,
     CategoryUpdate,
+    CategorizationRuleCreate,
+    CategorizationRuleResponse,
+    CategorizationRuleUpdate,
+    CategorizePreviewRequest,
+    CategorizePreviewResponse,
     GoalCreate,
     GoalResponse,
     GoalUpdate,
+    CardCreate,
+    CardInvoiceCreate,
+    CardInvoiceResponse,
+    CardInvoiceUpdate,
+    CardResponse,
+    CardTransactionCreate,
+    CardTransactionResponse,
+    CardUpdate,
     ManualInvestmentCreate,
     ManualInvestmentResponse,
     ManualInvestmentUpdate,
@@ -78,6 +91,46 @@ def delete_category(category_id: UUID, session: Session = Depends(get_db_session
     if not ManualRepository(session).delete_category(category_id):
         _not_found()
     return Response(status_code=status.HTTP_204_NO_CONTENT)
+
+
+@router.get("/categorization-rules", response_model=list[CategorizationRuleResponse])
+def list_categorization_rules(session: Session = Depends(get_db_session)) -> list[CategorizationRuleResponse]:
+    return ManualRepository(session).list_categorization_rules()
+
+
+@router.post("/categorization-rules", response_model=CategorizationRuleResponse, status_code=status.HTTP_201_CREATED)
+def create_categorization_rule(
+    payload: CategorizationRuleCreate,
+    session: Session = Depends(get_db_session),
+) -> CategorizationRuleResponse:
+    return ManualRepository(session).create_categorization_rule(payload)
+
+
+@router.patch("/categorization-rules/{rule_id}", response_model=CategorizationRuleResponse)
+def update_categorization_rule(
+    rule_id: UUID,
+    payload: CategorizationRuleUpdate,
+    session: Session = Depends(get_db_session),
+) -> CategorizationRuleResponse:
+    result = ManualRepository(session).update_categorization_rule(rule_id, payload)
+    if result is None:
+        _not_found()
+    return result
+
+
+@router.delete("/categorization-rules/{rule_id}", status_code=status.HTTP_204_NO_CONTENT)
+def delete_categorization_rule(rule_id: UUID, session: Session = Depends(get_db_session)) -> Response:
+    if not ManualRepository(session).delete_categorization_rule(rule_id):
+        _not_found()
+    return Response(status_code=status.HTTP_204_NO_CONTENT)
+
+
+@router.post("/categorize/preview", response_model=CategorizePreviewResponse)
+def categorize_preview(
+    payload: CategorizePreviewRequest,
+    session: Session = Depends(get_db_session),
+) -> CategorizePreviewResponse:
+    return ManualRepository(session).preview_category(payload)
 
 
 @router.get("/manual/goals", response_model=list[GoalResponse])
@@ -167,3 +220,76 @@ def delete_manual_investment(investment_id: UUID, session: Session = Depends(get
     if not ManualRepository(session).delete_manual_investment(investment_id):
         _not_found()
     return Response(status_code=status.HTTP_204_NO_CONTENT)
+
+
+@router.get("/cards", response_model=list[CardResponse])
+def list_cards(session: Session = Depends(get_db_session)) -> list[CardResponse]:
+    return ManualRepository(session).list_cards()
+
+
+@router.post("/cards", response_model=CardResponse, status_code=status.HTTP_201_CREATED)
+def create_card(payload: CardCreate, session: Session = Depends(get_db_session)) -> CardResponse:
+    return ManualRepository(session).create_card(payload)
+
+
+@router.patch("/cards/{card_id}", response_model=CardResponse)
+def update_card(card_id: UUID, payload: CardUpdate, session: Session = Depends(get_db_session)) -> CardResponse:
+    result = ManualRepository(session).update_card(card_id, payload)
+    if result is None:
+        _not_found()
+    return result
+
+
+@router.delete("/cards/{card_id}", status_code=status.HTTP_204_NO_CONTENT)
+def delete_card(card_id: UUID, session: Session = Depends(get_db_session)) -> Response:
+    if not ManualRepository(session).delete_card(card_id):
+        _not_found()
+    return Response(status_code=status.HTTP_204_NO_CONTENT)
+
+
+@router.get("/card-invoices", response_model=list[CardInvoiceResponse])
+def list_card_invoices(session: Session = Depends(get_db_session)) -> list[CardInvoiceResponse]:
+    return ManualRepository(session).list_card_invoices()
+
+
+@router.post("/card-invoices", response_model=CardInvoiceResponse, status_code=status.HTTP_201_CREATED)
+def create_card_invoice(
+    payload: CardInvoiceCreate,
+    session: Session = Depends(get_db_session),
+) -> CardInvoiceResponse:
+    return ManualRepository(session).create_card_invoice(payload)
+
+
+@router.patch("/card-invoices/{invoice_id}", response_model=CardInvoiceResponse)
+def update_card_invoice(
+    invoice_id: UUID,
+    payload: CardInvoiceUpdate,
+    session: Session = Depends(get_db_session),
+) -> CardInvoiceResponse:
+    result = ManualRepository(session).update_card_invoice(invoice_id, payload)
+    if result is None:
+        _not_found()
+    return result
+
+
+@router.delete("/card-invoices/{invoice_id}", status_code=status.HTTP_204_NO_CONTENT)
+def delete_card_invoice(invoice_id: UUID, session: Session = Depends(get_db_session)) -> Response:
+    if not ManualRepository(session).delete_card_invoice(invoice_id):
+        _not_found()
+    return Response(status_code=status.HTTP_204_NO_CONTENT)
+
+
+@router.post(
+    "/card-invoices/{invoice_id}/transactions",
+    response_model=CardTransactionResponse,
+    status_code=status.HTTP_201_CREATED,
+)
+def create_card_transaction(
+    invoice_id: UUID,
+    payload: CardTransactionCreate,
+    session: Session = Depends(get_db_session),
+) -> CardTransactionResponse:
+    result = ManualRepository(session).create_card_transaction(invoice_id, payload)
+    if result is None:
+        _not_found()
+    return result

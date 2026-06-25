@@ -88,3 +88,59 @@ O projeto inclui fixtures anônimas em `fixtures/anonymized/` e saídas esperada
 Para validar com arquivos reais, use `fixtures/private/`, que está no `.gitignore`. Consulte `FIXTURES.md` e `PARSER_CONTRACTS.md` antes de implementar qualquer parser.
 
 Regra dura: nenhum PDF, CSV ou XLSX real com CPF, conta, endereço, salário, fatura ou patrimônio deve ser commitado.
+
+## Estado atual do MVP
+
+O MVP executavel inclui:
+
+- backend FastAPI com SQLAlchemy, Alembic e PostgreSQL;
+- schemas `bronze`, `silver`, `gold`, `app` e `audit`;
+- ingestao Bronze com upload, hash SHA-256, duplicidade e extracao bruta de CSV/XLSX/PDF;
+- parsers para Mercado Livre, B3, Sicoob e CSV manual de investimentos;
+- revisao/aprovacao de importacoes para Silver;
+- CRUD manual de contas, categorias, metas, lancamentos e investimentos;
+- seed inicial de categorias e categorizacao deterministica por regras;
+- cadastro manual de cartoes, faturas e compras parceladas;
+- calculos Gold de renda passiva, meta R$ 100 mil, reserva, alocacao, compromissos e alertas;
+- simulador deterministico "Posso Comprar?";
+- frontend Next.js com dashboard, importacao, revisao, cadastros, indicadores, simulador e historico.
+
+## Rodar localmente
+
+Backend e banco:
+
+```bash
+cp .env.example .env
+docker compose up --build -d
+curl http://localhost:8000/health
+```
+
+Frontend:
+
+```bash
+cd frontend
+npm install
+npm run dev -- -p 3000
+```
+
+URLs:
+
+- Backend: `http://localhost:8000`
+- Frontend: `http://localhost:3000`
+
+## Testes e validacoes
+
+```bash
+docker compose exec backend alembic current
+docker compose exec backend python scripts/check_schema.py
+docker compose exec -e RUN_DB_TESTS=1 backend pytest
+docker compose exec backend python scripts/validate_mvp_flow.py
+cd frontend && npm audit --omit=dev
+cd frontend && npm run build
+```
+
+## Documentacao operacional
+
+- Uso local e fluxo principal: `docs/USAGE.md`
+- Como adicionar novo parser: `docs/ADDING_PARSER.md`
+- Checklist final de revisao: `docs/FINAL_REVIEW_CHECKLIST.md`

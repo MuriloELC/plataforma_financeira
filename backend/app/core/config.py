@@ -14,6 +14,7 @@ class Settings:
     cors_allow_origins: tuple[str, ...]
     database_url: str
     file_storage_path: str
+    max_upload_size_bytes: int
 
     @classmethod
     def from_env(cls) -> "Settings":
@@ -40,6 +41,7 @@ class Settings:
             ),
             database_url=database_url,
             file_storage_path=_env("FILE_STORAGE_PATH", "./storage"),
+            max_upload_size_bytes=int(_env("MAX_UPLOAD_SIZE_BYTES", "20971520")),
         )
 
 

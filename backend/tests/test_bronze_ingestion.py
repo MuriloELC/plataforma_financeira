@@ -202,3 +202,40 @@ def test_upload_unsupported_extension_returns_400(client: TestClient) -> None:
 
     assert response.status_code == 400
     assert "Unsupported file extension" in response.json()["detail"]
+
+
+def test_upload_empty_file_returns_422(client: TestClient) -> None:
+    response = client.post(
+        "/files/upload",
+        files={"file": ("empty.csv", b"", "text/csv")},
+    )
+
+    assert response.status_code == 422
+    assert response.json()["detail"] == "Uploaded file is empty."
+
+
+def test_upload_rejects_file_above_configured_limit(client: TestClient, monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setenv("MAX_UPLOAD_SIZE_BYTES", "10")
+    get_settings.cache_clear()
+
+    response = client.post(
+        "/files/upload",
+        files={"file": ("large.csv", b"01234567890", "text/csv")},
+    )
+
+    assert response.status_code == 413
+    assert "configured limit" in response.json()["detail"]
+
+
+def test_upload_response_masks_sensitive_filename_and_storage_path(client: TestClient) -> None:
+    response = client.post(
+        "/files/upload",
+        files={"file": ("extrato_123.456.789-09.csv", b"linha;valor\n1;2\n", "text/csv")},
+    )
+
+    assert response.status_code == 201, response.text
+    raw_file = response.json()["raw_file"]
+    assert "123.456.789-09" not in raw_file["original_filename"]
+    assert "***.***.***-**" in raw_file["original_filename"]
+    assert "/" not in raw_file["stored_path"]
+    assert "\\" not in raw_file["stored_path"]

@@ -5,6 +5,7 @@ REQUIRED_TABLES = {
         "accounts",
         "audit_logs",
         "categories",
+        "categorization_rules",
         "goals",
         "institutions",
         "purchase_decisions",
@@ -114,5 +115,14 @@ REQUIRED_COLUMNS = {
         "entity_id",
         "action",
         "created_at",
+    ),
+    ("app", "categorization_rules"): (
+        "id",
+        "pattern",
+        "match_type",
+        "category_id",
+        "priority",
+        "confidence_score",
+        "is_active",
     ),
 }

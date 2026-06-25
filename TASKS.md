@@ -44,7 +44,7 @@ Entregaveis:
 
 Validacao:
 - `docker compose up --build -d` sobe Postgres e backend;
-- `alembic current` retorna `20260625_0002 (head)`;
+- `alembic current` retorna `20260625_0003 (head)`;
 - `python scripts/check_schema.py` retorna `Database schema OK`;
 - `GET /health` retorna `{"status":"ok","service":"finance-decision-backend"}`;
 - `RUN_DB_TESTS=1 pytest` passa no container com 8 testes;
@@ -180,7 +180,7 @@ Entregaveis:
 - frontend Next.js funcional em `frontend/app/page.tsx`;
 - dashboard financeiro consumindo endpoints Gold e historico real;
 - telas de importacao, revisao de importacoes, lancamentos manuais, investimentos manuais, cartoes/faturas, indicadores Gold, simulador e historico de decisoes;
-- formularios conectados a API para upload, preview/aprovacao, cadastros manuais, refresh Gold e simulacao de compra;
+- formularios conectados a API para upload, preview/aprovacao, cadastros manuais, regras de categoria, cartoes/faturas, refresh Gold e simulacao de compra;
 - estados de carregamento, erro, vazio e mensagens de validacao retornadas pela API;
 - CORS configuravel no backend para permitir o frontend local;
 - dependencias frontend auditadas com `next@16.2.9` e override de `postcss@8.5.10`.
@@ -191,6 +191,33 @@ Validacao:
 - `RUN_DB_TESTS=1 pytest` passa no container com 51 testes;
 - Playwright carregou `http://localhost:3000` e validou as abas principais;
 - frontend consome API real em `http://localhost:8000` sem erro de CORS.
+
+### Fase 10 - Qualidade final
+Status: concluida
+
+Entregaveis:
+- mascaramento centralizado em `backend/app/core/privacy.py`;
+- respostas de arquivo sem caminho local completo e com CPF mascarado no nome exibido;
+- validacao de upload para arquivo vazio, extensao nao suportada e limite `MAX_UPLOAD_SIZE_BYTES`;
+- migration `20260625_0003_add_categorization_rules_and_seed_categories`;
+- seed idempotente de categorias iniciais;
+- endpoints de regras de categorizacao e preview deterministico;
+- endpoints manuais de cartoes, faturas e compras com parcelas;
+- script seguro `scripts/validate_private_fixtures.py` sem nomes/conteudo de arquivos reais;
+- script `backend/scripts/validate_mvp_flow.py` cobrindo fluxo principal do MVP;
+- documentacao `docs/USAGE.md`, `docs/ADDING_PARSER.md` e `docs/FINAL_REVIEW_CHECKLIST.md`;
+- README atualizado com estado do MVP, comandos e validacoes;
+- checklist de revisao preenchido.
+
+Validacao:
+- `docker compose up --build --pull never -d` sobe backend e banco;
+- `RUN_DB_TESTS=1 pytest` passa no container com 57 testes;
+- migrations rodam do zero ate `20260625_0003`;
+- `python scripts/check_schema.py` retorna `Database schema OK`;
+- `python scripts/validate_mvp_flow.py` retorna `MVP flow validation OK`;
+- `npm audit --omit=dev` passa sem vulnerabilidades;
+- `npm run build` passa no frontend;
+- Playwright validou as abas principais, incluindo controles de categorizacao e cartoes.
 
 ## Épico 0 — Bootstrap
 
@@ -348,7 +375,12 @@ Implemente CRUD de investimentos manuais para CDB, Fundo DI, INCO e Previdência
 ## Épico 4 — Categorias e manual
 
 ### 4.1 Categorias iniciais
-Status: aberta
+Status: concluida
+
+Resultado:
+- categorias iniciais seedadas pela migration `20260625_0003`;
+- seed idempotente executado tambem na listagem de `/categories`;
+- `GET /categories` retorna categorias do DATA_MODEL.
 
 Prompt:
 ```text
@@ -370,8 +402,15 @@ Implemente lançamentos manuais em silver.cash_transactions com auditoria.
 ```
 
 ### 4.3 Regras de categorização
-Status: aberta
+Status: concluida
 Depende de: 4.1
+
+Resultado:
+- tabela `app.categorization_rules` criada;
+- CRUD de regras implementado em `/categorization-rules`;
+- preview deterministico implementado em `POST /categorize/preview`;
+- suporta match `contains`, `startswith` e `exact`, prioridade e confianca;
+- teste cobre sugestao, baixa confianca e fallback `Nao classificado`.
 
 Prompt:
 ```text
@@ -393,8 +432,15 @@ Implemente silver.cards, card_invoices, card_transactions e installments com mig
 ```
 
 ### 5.2 Cadastro manual de fatura
-Status: aberta
+Status: concluida
 Depende de: 5.1
+
+Resultado:
+- CRUD basico de cartoes implementado em `/cards`;
+- cadastro manual de fatura implementado em `/card-invoices`;
+- cadastro de compras da fatura implementado em `/card-invoices/{id}/transactions`;
+- compras parceladas geram `silver.installments`;
+- teste cobre criacao de cartao, fatura, compra parcelada e remocao da fatura.
 
 Prompt:
 ```text

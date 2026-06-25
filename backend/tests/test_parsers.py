@@ -107,3 +107,22 @@ def test_parser_failure_is_controlled(tmp_path: Path) -> None:
 
     assert exc.value.code == "invalid_mercado_livre_csv"
     assert exc.value.to_dict()["message"]
+
+
+def test_parser_error_masks_sensitive_raw_reference() -> None:
+    error = ParserError(
+        "invalid_pdf",
+        "Falha ao ler CPF 123.456.789-09",
+        raw_reference={
+            "raw_text": "CPF 123.456.789-09 Conta 12345-6 Rua Exemplo, 100",
+        },
+    )
+
+    payload = error.to_dict()
+
+    assert "123.456.789-09" not in str(payload)
+    assert "12345-6" not in str(payload)
+    assert "Rua Exemplo" not in str(payload)
+    assert "***.***.***-**" in str(payload)
+    assert "<mascarado>" in str(payload)
+    assert "<endereco mascarado>" in str(payload)

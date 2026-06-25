@@ -28,6 +28,22 @@ type Category = {
   type: string;
 };
 
+type Card = {
+  id: string;
+  institution: string;
+  card_name: string;
+  brand: string | null;
+};
+
+type CardInvoice = {
+  id: string;
+  card_id: string;
+  reference_month: string;
+  due_date: string | null;
+  total_amount: string;
+  status: string;
+};
+
 type Decision = {
   id: string;
   decision_date: string;
@@ -105,11 +121,14 @@ export default function Home() {
   const [files, setFiles] = useState<RawFile[]>([]);
   const [accounts, setAccounts] = useState<Account[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
+  const [cards, setCards] = useState<Card[]>([]);
+  const [cardInvoices, setCardInvoices] = useState<CardInvoice[]>([]);
   const [decisions, setDecisions] = useState<Decision[]>([]);
   const [gold, setGold] = useState<Record<string, JsonMap[]>>({});
   const [lastUpload, setLastUpload] = useState<UploadResponse | null>(null);
   const [preview, setPreview] = useState<JsonMap | null>(null);
   const [simulation, setSimulation] = useState<JsonMap | null>(null);
+  const [categoryPreview, setCategoryPreview] = useState<JsonMap | null>(null);
 
   const today = useMemo(() => new Date().toISOString().slice(0, 10), []);
 
@@ -122,6 +141,8 @@ export default function Home() {
         filesResult,
         accountsResult,
         categoriesResult,
+        cardsResult,
+        invoicesResult,
         decisionsResult,
         passive,
         goal,
@@ -135,6 +156,8 @@ export default function Home() {
         api<RawFile[]>("/files"),
         api<Account[]>("/manual/accounts"),
         api<Category[]>("/categories"),
+        api<Card[]>("/cards"),
+        api<CardInvoice[]>("/card-invoices"),
         api<Decision[]>("/purchase-decisions"),
         api<JsonMap[]>("/gold/passive-income?limit=1"),
         api<JsonMap[]>("/gold/goal-100k?limit=1"),
@@ -148,6 +171,8 @@ export default function Home() {
       setFiles(filesResult);
       setAccounts(accountsResult);
       setCategories(categoriesResult);
+      setCards(cardsResult);
+      setCardInvoices(invoicesResult);
       setDecisions(decisionsResult);
       setGold({ passive, goal, reserve, allocation, commitments, context, alerts });
     } catch (err) {
@@ -235,6 +260,46 @@ export default function Home() {
     }
   }
 
+  async function createCategorizationRule(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    const form = event.currentTarget;
+    try {
+      await api("/categorization-rules", {
+        method: "POST",
+        body: JSON.stringify({
+          pattern: field(form, "pattern"),
+          match_type: field(form, "match_type"),
+          category_id: field(form, "category_id"),
+          transaction_type: field(form, "transaction_type") || null,
+          priority: Number(field(form, "priority") || "100"),
+          confidence_score: field(form, "confidence_score") || "0.8000",
+          is_active: true,
+        }),
+      });
+      form.reset();
+      await loadData();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Falha ao criar regra.");
+    }
+  }
+
+  async function previewCategorization(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    const form = event.currentTarget;
+    try {
+      const result = await api<JsonMap>("/categorize/preview", {
+        method: "POST",
+        body: JSON.stringify({
+          description: field(form, "description"),
+          transaction_type: field(form, "transaction_type") || null,
+        }),
+      });
+      setCategoryPreview(result);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Falha ao prever categoria.");
+    }
+  }
+
   async function createTransaction(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     const form = event.currentTarget;
@@ -283,6 +348,72 @@ export default function Home() {
       await loadData();
     } catch (err) {
       setError(err instanceof Error ? err.message : "Falha ao criar investimento.");
+    }
+  }
+
+  async function createCard(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    const form = event.currentTarget;
+    try {
+      await api("/cards", {
+        method: "POST",
+        body: JSON.stringify({
+          institution: field(form, "institution"),
+          card_name: field(form, "card_name"),
+          brand: field(form, "brand") || null,
+          last_four_digits: field(form, "last_four_digits") || null,
+          credit_limit: field(form, "credit_limit") || null,
+        }),
+      });
+      form.reset();
+      await loadData();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Falha ao criar cartao.");
+    }
+  }
+
+  async function createCardInvoice(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    const form = event.currentTarget;
+    try {
+      await api("/card-invoices", {
+        method: "POST",
+        body: JSON.stringify({
+          card_id: field(form, "card_id"),
+          reference_month: field(form, "reference_month"),
+          due_date: field(form, "due_date") || null,
+          total_amount: field(form, "total_amount") || "0",
+          minimum_payment: field(form, "minimum_payment") || null,
+          status: field(form, "status") || "open",
+        }),
+      });
+      form.reset();
+      await loadData();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Falha ao criar fatura.");
+    }
+  }
+
+  async function createCardTransaction(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    const form = event.currentTarget;
+    const invoiceId = field(form, "invoice_id");
+    try {
+      await api(`/card-invoices/${invoiceId}/transactions`, {
+        method: "POST",
+        body: JSON.stringify({
+          purchase_date: field(form, "purchase_date"),
+          description_raw: field(form, "description_raw"),
+          amount: field(form, "amount"),
+          category_id: field(form, "category_id") || null,
+          installment_number: Number(field(form, "installment_number") || "1"),
+          installment_total: Number(field(form, "installment_total") || "1"),
+        }),
+      });
+      form.reset();
+      await loadData();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Falha ao criar compra do cartao.");
     }
   }
 
@@ -428,6 +559,39 @@ export default function Home() {
               </select>
               <button type="submit">Criar categoria</button>
             </form>
+            <form className="surface" onSubmit={createCategorizationRule}>
+              <h2>Regra de categoria</h2>
+              <input name="pattern" placeholder="Padrao textual" required />
+              <select name="category_id" required>
+                <option value="">Categoria</option>
+                {categories.map((category) => (
+                  <option key={category.id} value={category.id}>
+                    {category.name}
+                  </option>
+                ))}
+              </select>
+              <select name="match_type" required>
+                <option value="contains">Contem</option>
+                <option value="startswith">Comeca com</option>
+                <option value="exact">Exato</option>
+              </select>
+              <input name="transaction_type" placeholder="Tipo opcional" />
+              <input defaultValue="100" min="0" name="priority" type="number" />
+              <input defaultValue="0.8000" max="1" min="0" name="confidence_score" step="0.0001" type="number" />
+              <button type="submit">Salvar regra</button>
+            </form>
+            <form className="surface" onSubmit={previewCategorization}>
+              <h2>Prever categoria</h2>
+              <input name="description" placeholder="Descricao" required />
+              <input name="transaction_type" placeholder="Tipo opcional" />
+              <button type="submit">Prever</button>
+              {categoryPreview ? (
+                <div className="result">
+                  <strong>{String(categoryPreview.category_name ?? "Nao classificado")}</strong>
+                  <span>Confianca {Number(categoryPreview.confidence_score ?? 0).toFixed(2)}</span>
+                </div>
+              ) : null}
+            </form>
             <form className="surface wide" onSubmit={createTransaction}>
               <h2>Lancamento</h2>
               <select name="account_id" required>
@@ -482,17 +646,85 @@ export default function Home() {
         ) : null}
 
         {active === "cards" ? (
-          <section className="surface">
-            <h2>Parcelas futuras</h2>
-            <DataTable
-              columns={["Mes", "Origem", "Descricao", "Valor"]}
-              rows={(gold.commitments ?? []).map((item) => [
-                String(item.due_month ?? "-"),
-                String(item.source ?? "-"),
-                String(item.description ?? "-"),
-                money(item.amount),
-              ])}
-            />
+          <section className="workspace-grid">
+            <form className="surface" onSubmit={createCard}>
+              <h2>Cartao</h2>
+              <input name="institution" placeholder="Instituicao" required />
+              <input name="card_name" placeholder="Nome do cartao" required />
+              <input name="brand" placeholder="Bandeira" />
+              <input maxLength={4} name="last_four_digits" placeholder="Final" />
+              <input name="credit_limit" placeholder="Limite" type="number" step="0.01" />
+              <button type="submit">Criar cartao</button>
+            </form>
+            <form className="surface" onSubmit={createCardInvoice}>
+              <h2>Fatura</h2>
+              <select name="card_id" required>
+                <option value="">Cartao</option>
+                {cards.map((card) => (
+                  <option key={card.id} value={card.id}>
+                    {card.institution} - {card.card_name}
+                  </option>
+                ))}
+              </select>
+              <input defaultValue={today.slice(0, 8) + "01"} name="reference_month" required type="date" />
+              <input name="due_date" type="date" />
+              <input name="total_amount" placeholder="Total" type="number" step="0.01" />
+              <input name="minimum_payment" placeholder="Pagamento minimo" type="number" step="0.01" />
+              <select name="status">
+                <option value="open">Aberta</option>
+                <option value="closed">Fechada</option>
+                <option value="paid">Paga</option>
+              </select>
+              <button type="submit">Criar fatura</button>
+            </form>
+            <form className="surface wide" onSubmit={createCardTransaction}>
+              <h2>Compra no cartao</h2>
+              <select name="invoice_id" required>
+                <option value="">Fatura</option>
+                {cardInvoices.map((invoice) => (
+                  <option key={invoice.id} value={invoice.id}>
+                    {invoice.reference_month} - {money(invoice.total_amount)} - {invoice.status}
+                  </option>
+                ))}
+              </select>
+              <input defaultValue={today} name="purchase_date" required type="date" />
+              <input name="description_raw" placeholder="Descricao" required />
+              <input name="amount" placeholder="Valor da parcela" required type="number" step="0.01" />
+              <select name="category_id">
+                <option value="">Categoria</option>
+                {categories.map((category) => (
+                  <option key={category.id} value={category.id}>
+                    {category.name}
+                  </option>
+                ))}
+              </select>
+              <input defaultValue="1" min="1" name="installment_number" type="number" />
+              <input defaultValue="1" min="1" name="installment_total" type="number" />
+              <button type="submit">Salvar compra</button>
+            </form>
+            <div className="surface">
+              <h2>Faturas</h2>
+              <DataTable
+                columns={["Mes", "Total", "Status"]}
+                rows={cardInvoices.map((invoice) => [
+                  invoice.reference_month,
+                  money(invoice.total_amount),
+                  invoice.status,
+                ])}
+              />
+            </div>
+            <div className="surface">
+              <h2>Parcelas futuras</h2>
+              <DataTable
+                columns={["Mes", "Origem", "Descricao", "Valor"]}
+                rows={(gold.commitments ?? []).map((item) => [
+                  String(item.due_month ?? "-"),
+                  String(item.source ?? "-"),
+                  String(item.description ?? "-"),
+                  money(item.amount),
+                ])}
+              />
+            </div>
           </section>
         ) : null}
 
