@@ -2,6 +2,7 @@ from fastapi import FastAPI
 
 from app.api.routes.files import router as files_router
 from app.api.routes.health import router as health_router
+from app.api.routes.manual import router as manual_router
 
 
 def create_app() -> FastAPI:
@@ -11,6 +12,7 @@ def create_app() -> FastAPI:
     )
     app.include_router(health_router)
     app.include_router(files_router)
+    app.include_router(manual_router)
     return app
 
 

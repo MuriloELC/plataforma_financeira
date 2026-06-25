@@ -101,6 +101,30 @@ Validacao:
 - nenhum dado e gravado em Gold nesta fase.
 
 ### Fase 6 - Cadastro manual
+Status: concluida
+
+Entregaveis:
+- endpoint `GET/POST/PATCH/DELETE /manual/accounts`;
+- endpoint `GET/POST/PATCH/DELETE /categories`;
+- endpoint `GET/POST/PATCH/DELETE /manual/goals`;
+- endpoint `GET/POST/PATCH/DELETE /manual/transactions`;
+- endpoint `GET/POST/PATCH/DELETE /manual/investments`;
+- schemas Pydantic para cadastros manuais;
+- repositorio manual com auditoria em `app.audit_logs`;
+- lancamentos manuais em `silver.cash_transactions`;
+- investimentos manuais em `silver.manual_investment_positions`;
+- suporte a CDB, fundos, INCO, previdencia e outros via `asset_class`;
+- `counts_as_reserve` persistido explicitamente para separar patrimonio e reserva.
+
+Validacao:
+- `pytest` local passa com 19 testes ativos e 23 integracoes puladas;
+- `RUN_DB_TESTS=1 pytest` passa no container com 42 testes;
+- criar, listar, editar e remover funciona para contas, categorias, metas, lancamentos e investimentos;
+- create/update/delete gera `app.audit_logs`;
+- investimentos manuais ficam em Silver para patrimonio;
+- somente itens com `counts_as_reserve = true` ficam marcados como reserva.
+
+### Fase 7 - Gold e indicadores
 Status: aberta
 
 ## Épico 0 — Bootstrap
@@ -243,8 +267,13 @@ Implemente parser para relatórios B3 XLSX mensal/anual, extraindo posições, p
 ```
 
 ### 3.3 Cadastro manual de investimentos
-Status: aberta
+Status: concluida
 Depende de: 3.1
+
+Resultado:
+- CRUD manual de investimentos implementado em `/manual/investments`;
+- CDB, fundos, INCO, previdencia e outros sao suportados por `asset_class`;
+- `counts_as_reserve` e auditoria implementados.
 
 Prompt:
 ```text
@@ -262,8 +291,13 @@ Crie app.categories com seed idempotente das categorias iniciais e endpoint GET 
 ```
 
 ### 4.2 Lançamentos manuais
-Status: aberta
+Status: concluida
 Depende de: 4.1
+
+Resultado:
+- CRUD de lancamentos manuais implementado em `/manual/transactions`;
+- registros entram em `silver.cash_transactions` com `transaction_type = manual`;
+- mutacoes geram `app.audit_logs`.
 
 Prompt:
 ```text

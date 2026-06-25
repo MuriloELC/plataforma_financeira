@@ -1,5 +1,19 @@
 # CHANGELOG
 
+## 0.8.0 - Cadastro manual
+
+- Adicionados endpoints CRUD para contas manuais em `/manual/accounts`.
+- Adicionados endpoints CRUD para categorias em `/categories`.
+- Adicionados endpoints CRUD para metas em `/manual/goals`.
+- Adicionados endpoints CRUD para lancamentos manuais em `/manual/transactions`.
+- Adicionados endpoints CRUD para investimentos manuais em `/manual/investments`.
+- Adicionados schemas Pydantic para cadastros manuais.
+- Adicionado repositorio manual com auditoria em `app.audit_logs`.
+- Lancamentos manuais passam a ser gravados em `silver.cash_transactions`.
+- Investimentos manuais passam a ser gravados em `silver.manual_investment_positions`.
+- Persistido `counts_as_reserve` para diferenciar patrimonio de ativos elegiveis para reserva.
+- Adicionados testes de CRUD manual, auditoria e regra de reserva.
+
 ## 0.7.0 - Normalizacao Silver
 
 - Adicionado registry de parsers por `source_type`.
