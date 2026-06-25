@@ -1,5 +1,17 @@
 # CHANGELOG
 
+## 0.10.0 - Simulador Posso Comprar
+
+- Adicionado endpoint `POST /purchase-decisions/simulate`.
+- Adicionado endpoint `GET /purchase-decisions` para historico.
+- Implementado motor deterministico sem score numerico.
+- Implementados vereditos `Comprar agora`, `Comprar com ajuste`, `Esperar` e `Evitar`.
+- Calculados impactos no aporte minimo, reserva, parcelas futuras e atraso estimado na meta de R$ 100 mil.
+- Exigida justificativa para tecnologia acima de R$ 300.
+- Exigida justificativa quando a compra compromete o aporte minimo.
+- Historico de decisoes salvo em `app.purchase_decisions`.
+- Adicionados testes dos quatro vereditos, justificativa obrigatoria e persistencia de historico.
+
 ## 0.9.0 - Gold e indicadores
 
 - Adicionado endpoint `POST /gold/refresh`.

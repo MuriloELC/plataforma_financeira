@@ -151,6 +151,29 @@ Validacao:
 - Gold usa apenas dados Silver.
 
 ### Fase 8 - Simulador Posso Comprar
+Status: concluida
+
+Entregaveis:
+- endpoint `POST /purchase-decisions/simulate`;
+- endpoint `GET /purchase-decisions`;
+- motor deterministico sem score numerico;
+- vereditos permitidos: `Comprar agora`, `Comprar com ajuste`, `Esperar`, `Evitar`;
+- calculo de impacto no aporte minimo;
+- calculo de impacto na reserva;
+- calculo de impacto em parcelas futuras;
+- calculo de atraso estimado na meta de R$ 100 mil;
+- exigencia de justificativa para tecnologia acima de R$ 300;
+- exigencia de justificativa quando o aporte minimo e comprometido;
+- historico salvo em `app.purchase_decisions`.
+
+Validacao:
+- `pytest` local passa com 19 testes ativos e 31 integracoes puladas;
+- `RUN_DB_TESTS=1 pytest` passa no container com 50 testes;
+- testes cobrem os quatro vereditos;
+- testes validam historico salvo;
+- testes validam justificativa obrigatoria para tecnologia e aporte minimo.
+
+### Fase 9 - Frontend MVP
 Status: aberta
 
 ## Épico 0 — Bootstrap
@@ -431,8 +454,15 @@ Implemente gold.purchase_decision_context com renda líquida, aporte mínimo, re
 ```
 
 ### 7.2 Motor de decisão
-Status: aberta
+Status: concluida
 Depende de: 7.1
+
+Resultado:
+- motor deterministico implementado em `backend/app/services/purchase_decision.py`;
+- endpoint `POST /purchase-decisions/simulate`;
+- historico em `GET /purchase-decisions`;
+- sem score numerico;
+- testes cobrem `Comprar agora`, `Comprar com ajuste`, `Esperar` e `Evitar`.
 
 Prompt:
 ```text
