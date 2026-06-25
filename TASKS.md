@@ -51,6 +51,31 @@ Validacao:
 - testes usam apenas `fixtures/anonymized`.
 
 ### Fase 4 - Parsers
+Status: concluida
+
+Entregaveis:
+- protocolo comum `ParserProtocol`;
+- modelos Pydantic `ParsedDocument`, `ParsedRecord` e `ParserErrorDetail`;
+- erro controlado `ParserError`;
+- parser `MercadoLivreAccountStatementCsvParser`;
+- parser `MercadoLivreManualCdbCsvParser`;
+- parser `B3MonthlyConsolidatedXlsxParser`;
+- parser `B3AnnualConsolidatedXlsxParser`;
+- parser `SicoobPayrollPdfParser`;
+- parser `SicoobCheckingStatementPdfParser`;
+- parser `SicoobCardInvoicePdfParser`;
+- parser `SicoobInvestmentsPdfParser`;
+- testes comparando saida com `fixtures/expected`;
+- preservacao de `import_batch_id`, `source_file_id`, `confidence_score`, `needs_review` e `raw_reference` nos registros parseados.
+
+Validacao:
+- `pytest backend/tests/test_parsers.py` passa localmente;
+- `pytest` local passa com 19 testes ativos e 12 integracoes puladas;
+- `RUN_DB_TESTS=1 pytest` passa no container com 31 testes;
+- nenhum parser salva direto em Silver ou Gold;
+- nenhum parser usa dados financeiros reais versionados.
+
+### Fase 5 - Silver
 Status: aberta
 
 ## Épico 0 — Bootstrap
@@ -135,8 +160,13 @@ Implemente extração bruta para CSV, XLSX e PDF salvando em bronze.raw_csv_rows
 ## Épico 2 — Mercado Livre
 
 ### 2.1 Parser CSV Mercado Livre
-Status: aberta
+Status: concluida
 Depende de: 1.3
+
+Resultado:
+- `MercadoLivreAccountStatementCsvParser` implementado;
+- `MercadoLivreManualCdbCsvParser` implementado;
+- saidas comparadas com golden files de Mercado Livre.
 
 Prompt:
 ```text
@@ -163,8 +193,13 @@ Implemente investment_assets, investment_positions, investment_transactions, inv
 ```
 
 ### 3.2 Parser B3 XLSX
-Status: aberta
+Status: concluida
 Depende de: 3.1
+
+Resultado:
+- `B3MonthlyConsolidatedXlsxParser` implementado;
+- `B3AnnualConsolidatedXlsxParser` implementado;
+- saidas comparadas com golden files B3 mensal e anual.
 
 Prompt:
 ```text
@@ -318,21 +353,29 @@ Status: futura
 - Critério de pronto: fixtures abrem localmente e não contêm CPF, conta, endereço ou nome completo real.
 
 ### Tarefa 0.2 - Criar interface base de parsers
+Status: concluida
+
 - Ler `PARSER_CONTRACTS.md`.
 - Implementar `ParserProtocol` e modelos Pydantic.
 - Critério de pronto: testes unitários validam contratos mínimos.
 
 ### Tarefa 0.3 - Parser Mercado Livre CSV
+Status: concluida
+
 - Usar `fixtures/anonymized/mercado_livre/account_statement_sample.csv`.
 - Comparar com `fixtures/expected/mercado_livre_account_statement_expected.json`.
 - Critério de pronto: separa resumo e movimentações, trata vírgula decimal e classifica rendimentos.
 
 ### Tarefa 0.4 - Parser B3 XLSX mensal
+Status: concluida
+
 - Usar `fixtures/anonymized/b3/relatorio-consolidado-mensal-sample.xlsx`.
 - Comparar com `fixtures/expected/b3_monthly_expected.json`.
 - Critério de pronto: extrai ações, ETF, renda fixa, proventos e negociações.
 
 ### Tarefa 0.5 - Parsers Sicoob PDF
+Status: concluida
+
 - Usar PDFs sintéticos em `fixtures/anonymized/sicoob/`.
 - Comparar com arquivos de `fixtures/expected/`.
 - Critério de pronto: extrai fatura, conta, investimentos e contracheque sem imprimir dados sensíveis.

@@ -1,5 +1,17 @@
 # CHANGELOG
 
+## 0.6.0 - Parsers do MVP
+
+- Adicionada infraestrutura comum de parsers com `ParserProtocol`, `ParsedDocument`, `ParsedRecord` e `ParserError`.
+- Implementado parser de extrato CSV Mercado Livre.
+- Implementado parser de CDB manual Mercado Livre.
+- Implementados parsers B3 XLSX mensal e anual.
+- Implementados parsers PDF Sicoob para contracheque, conta corrente, fatura de cartao e investimentos.
+- Adicionada comparacao automatizada com golden files em `fixtures/expected`.
+- Garantido que registros parseados preservam `import_batch_id`, `source_file_id`, `confidence_score`, `needs_review` e `raw_reference`.
+- Adicionado teste de falha controlada de parsing.
+- Mantida a restricao de nao gravar dados parseados diretamente em Silver ou Gold.
+
 ## 0.5.0 - Ingestao Bronze
 
 - Adicionado endpoint `POST /files/upload` para registrar CSV, XLSX e PDF no Bronze.
