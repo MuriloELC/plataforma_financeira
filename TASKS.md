@@ -125,6 +125,32 @@ Validacao:
 - somente itens com `counts_as_reserve = true` ficam marcados como reserva.
 
 ### Fase 7 - Gold e indicadores
+Status: concluida
+
+Entregaveis:
+- endpoint `POST /gold/refresh`;
+- endpoint `GET /gold/passive-income`;
+- endpoint `GET /gold/goal-100k`;
+- endpoint `GET /gold/reserve`;
+- endpoint `GET /gold/allocation`;
+- endpoint `GET /gold/future-commitments`;
+- endpoint `GET /gold/decision-context`;
+- endpoint `GET /gold/alerts`;
+- calculo de renda passiva recebida, media 3M, media 12M e progresso ate R$ 5.000/mes;
+- calculo de progresso ate R$ 100 mil considerando investimentos;
+- calculo de reserva alvo por media de gastos 3M x 6;
+- calculo de alocacao por classe de ativo;
+- calculo de compromissos futuros a partir de parcelas;
+- contexto Gold para decisao de compra;
+- alerta de aporte minimo mensal de R$ 300.
+
+Validacao:
+- `pytest` local passa com 19 testes ativos e 25 integracoes puladas;
+- `RUN_DB_TESTS=1 pytest` passa no container com 44 testes;
+- testes validam renda passiva, meta R$ 100 mil, reserva, alocacao, compromissos futuros e alerta de aporte;
+- Gold usa apenas dados Silver.
+
+### Fase 8 - Simulador Posso Comprar
 Status: aberta
 
 ## Épico 0 — Bootstrap
@@ -339,8 +365,13 @@ Implemente cadastro manual de fatura, compras e parcelas. Parcelas devem aliment
 ## Épico 6 — Gold
 
 ### 6.1 Renda passiva
-Status: aberta
+Status: concluida
 Depende de: 3.1
+
+Resultado:
+- `gold.passive_income_monthly` calculado via `/gold/refresh`;
+- separa `received_amount` de `accrued_amount`;
+- calcula media 3M, media 12M e progresso ate R$ 5.000/mes.
 
 Prompt:
 ```text
@@ -348,8 +379,13 @@ Implemente gold.monthly_passive_income separando received_amount e accrued_amoun
 ```
 
 ### 6.2 Progresso R$ 100 mil
-Status: aberta
+Status: concluida
 Depende de: 3.1
+
+Resultado:
+- `gold.goal_100k_progress` calculado via `/gold/refresh`;
+- considera posicoes de investimento Silver e investimentos manuais;
+- calcula percentual, restante, aporte medio e estimativa de meses.
 
 Prompt:
 ```text
@@ -357,8 +393,13 @@ Implemente gold.goal_100k_progress considerando apenas investimentos.
 ```
 
 ### 6.3 Reserva dinâmica
-Status: aberta
+Status: concluida
 Depende de: 2.2 e 3.3
+
+Resultado:
+- `gold.reserve_status` calculado via `/gold/refresh`;
+- alvo = media de gastos dos ultimos 3 meses x 6;
+- usa somente ativos marcados com `counts_as_reserve = true`.
 
 Prompt:
 ```text
@@ -377,8 +418,12 @@ Implemente dashboard com ordem: renda passiva, R$100 mil, reserva, alocação e 
 ## Épico 7 — Simulador
 
 ### 7.1 Contexto Gold
-Status: aberta
+Status: concluida
 Depende de: 6.1, 6.2, 6.3
+
+Resultado:
+- `gold.purchase_decision_context` calculado via `/gold/refresh`;
+- inclui aporte minimo, reserva, investimentos, restante ate R$ 100 mil e compromissos futuros.
 
 Prompt:
 ```text

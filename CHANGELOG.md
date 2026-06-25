@@ -1,5 +1,18 @@
 # CHANGELOG
 
+## 0.9.0 - Gold e indicadores
+
+- Adicionado endpoint `POST /gold/refresh`.
+- Adicionados endpoints de leitura para renda passiva, meta R$ 100 mil, reserva, alocacao, compromissos futuros, contexto de decisao e alertas.
+- Implementado calculo de renda passiva recebida, medias 3M/12M e progresso ate R$ 5.000/mes.
+- Implementado calculo de progresso ate R$ 100 mil considerando investimentos Silver.
+- Implementado calculo de reserva alvo por media de gastos dos ultimos 3 meses multiplicada por 6.
+- Implementado calculo de alocacao por classe de ativo.
+- Implementado refresh de compromissos futuros a partir de parcelas.
+- Implementado contexto Gold para decisao de compra.
+- Implementado alerta de aporte minimo mensal de R$ 300.
+- Adicionados testes com dados Silver conhecidos para validar os calculos Gold.
+
 ## 0.8.0 - Cadastro manual
 
 - Adicionados endpoints CRUD para contas manuais em `/manual/accounts`.
