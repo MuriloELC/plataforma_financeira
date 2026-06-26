@@ -37,6 +37,61 @@ DEFAULT_CATEGORIES = (
     ("Nao classificado", "expense"),
 )
 
+DEFAULT_INSTITUTIONS = (
+    ("Sicoob", "bank"),
+    ("Mercado Livre", "wallet"),
+    ("Mercado Pago", "wallet"),
+    ("B3", "broker"),
+    ("Manual", "other"),
+)
+
+DEFAULT_REFERENCE_OPTIONS = (
+    ("card_brand", "visa", "Visa"),
+    ("card_brand", "mastercard", "Mastercard"),
+    ("card_brand", "elo", "Elo"),
+    ("card_brand", "american_express", "American Express"),
+    ("card_brand", "hipercard", "Hipercard"),
+    ("investment_class", "cdb", "CDB"),
+    ("investment_class", "fund", "Fundo"),
+    ("investment_class", "alternative", "Alternativo"),
+    ("investment_class", "pension", "Previdencia"),
+    ("investment_class", "acao", "Acao"),
+    ("investment_class", "etf", "ETF"),
+    ("investment_class", "fii", "FII"),
+    ("investment_class", "renda_fixa", "Renda fixa"),
+    ("investment_product", "cdb", "CDB"),
+    ("investment_product", "tesouro_selic", "Tesouro Selic"),
+    ("liquidity", "daily", "Diaria"),
+    ("liquidity", "d1", "D+1"),
+    ("liquidity", "d30", "D+30"),
+    ("liquidity", "maturity", "No vencimento"),
+    ("liquidity", "illiquid", "Iliquido"),
+    ("liquidity", "custom", "Personalizada"),
+    ("rate_type", "fixed", "Prefixada"),
+    ("rate_type", "post_fixed", "Pos-fixada"),
+    ("rate_type", "indexed", "Indexada"),
+    ("rate_type", "compound", "Composta"),
+    ("rate_index", "cdi", "CDI"),
+    ("rate_index", "selic", "Selic"),
+    ("rate_index", "ipca", "IPCA"),
+    ("rate_index", "fixed", "Fixa"),
+    ("rate_periodicity", "monthly", "Mensal"),
+    ("rate_periodicity", "annual", "Anual"),
+    ("account_type", "checking", "Conta corrente"),
+    ("account_type", "wallet", "Carteira"),
+    ("account_type", "investment", "Investimento"),
+    ("account_type", "cash", "Dinheiro"),
+    ("import_source_type", "mercado_livre_account_statement_csv", "Mercado Livre CSV"),
+    ("import_source_type", "mercado_livre_manual_cdb_csv", "Mercado Livre CDB CSV"),
+    ("import_source_type", "manual_investment_csv", "Investimentos manual CSV"),
+    ("import_source_type", "b3_monthly_consolidated_xlsx", "B3 mensal XLSX"),
+    ("import_source_type", "b3_annual_consolidated_xlsx", "B3 anual XLSX"),
+    ("import_source_type", "sicoob_checking_statement_pdf", "Sicoob extrato PDF"),
+    ("import_source_type", "sicoob_card_invoice_pdf", "Sicoob fatura PDF"),
+    ("import_source_type", "sicoob_investments_pdf", "Sicoob investimentos PDF"),
+    ("import_source_type", "sicoob_payroll_pdf", "Contracheque PDF"),
+)
+
 
 def _json(value: Any) -> str:
     return json.dumps(value, ensure_ascii=True, default=str)
@@ -58,6 +113,286 @@ class ManualRepository:
     def __init__(self, session: Session) -> None:
         self.session = session
         self.silver = SilverRepository(session)
+
+    def seed_default_config(self) -> None:
+        for name, institution_type in DEFAULT_INSTITUTIONS:
+            self.session.execute(
+                text(
+                    """
+                    insert into app.institutions (name, institution_type, is_active)
+                    values (:name, :institution_type, true)
+                    on conflict (name)
+                    do update set institution_type = excluded.institution_type
+                    """
+                ),
+                {"name": name, "institution_type": institution_type},
+            )
+        for option_group, option_key, label in DEFAULT_REFERENCE_OPTIONS:
+            self.session.execute(
+                text(
+                    """
+                    insert into app.reference_options (
+                        option_group,
+                        option_key,
+                        label,
+                        is_system,
+                        is_active
+                    )
+                    values (
+                        :option_group,
+                        :option_key,
+                        :label,
+                        true,
+                        true
+                    )
+                    on conflict (option_group, option_key)
+                    do update set label = excluded.label, is_system = true
+                    """
+                ),
+                {"option_group": option_group, "option_key": option_key, "label": label},
+            )
+        self.session.commit()
+
+    def list_institutions(self, *, include_inactive: bool = False) -> list[dict[str, Any]]:
+        self.seed_default_config()
+        rows = self.session.execute(
+            text(
+                """
+                select id, name, institution_type, country, metadata, is_active, created_at
+                from app.institutions
+                where (:include_inactive = true or is_active = true)
+                order by name
+                """
+            ),
+            {"include_inactive": include_inactive},
+        ).mappings().all()
+        return [dict(row) for row in rows]
+
+    def create_institution(self, payload: Any) -> dict[str, Any]:
+        data = _payload_all(payload)
+        row = self.session.execute(
+            text(
+                """
+                insert into app.institutions (
+                    name,
+                    institution_type,
+                    country,
+                    metadata,
+                    is_active
+                )
+                values (
+                    :name,
+                    :institution_type,
+                    :country,
+                    cast(:metadata as jsonb),
+                    :is_active
+                )
+                on conflict (name)
+                do update set
+                    institution_type = excluded.institution_type,
+                    country = excluded.country,
+                    metadata = excluded.metadata,
+                    is_active = excluded.is_active
+                returning id, name, institution_type, country, metadata, is_active, created_at
+                """
+            ),
+            {**data, "metadata": _json(data.get("metadata", {}))},
+        ).mappings().one()
+        result = dict(row)
+        self.audit(entity_schema="app", entity_table="institutions", entity_id=result["id"], action="create", before=None, after=result)
+        self.session.commit()
+        return result
+
+    def get_institution(self, institution_id: UUID) -> dict[str, Any] | None:
+        return _dict(
+            self.session.execute(
+                text(
+                    """
+                    select id, name, institution_type, country, metadata, is_active, created_at
+                    from app.institutions
+                    where id = :id
+                    """
+                ),
+                {"id": institution_id},
+            ).mappings().one_or_none()
+        )
+
+    def update_institution(self, institution_id: UUID, payload: Any) -> dict[str, Any] | None:
+        before = self.get_institution(institution_id)
+        if before is None:
+            return None
+        data = _payload(payload)
+        if "metadata" in data:
+            data["metadata"] = _json(data["metadata"])
+        if data:
+            self._update("app", "institutions", institution_id, data, jsonb_fields={"metadata"})
+        after = self.get_institution(institution_id)
+        self.audit(entity_schema="app", entity_table="institutions", entity_id=institution_id, action="update", before=before, after=after)
+        self.session.commit()
+        return after
+
+    def list_reference_options(
+        self,
+        *,
+        option_group: str | None = None,
+        include_inactive: bool = False,
+    ) -> list[dict[str, Any]]:
+        self.seed_default_config()
+        rows = self.session.execute(
+            text(
+                """
+                select
+                    id,
+                    option_group,
+                    option_key,
+                    label,
+                    description,
+                    metadata,
+                    is_system,
+                    is_active,
+                    created_at,
+                    updated_at
+                from app.reference_options
+                where (cast(:option_group as text) is null or option_group = cast(:option_group as text))
+                  and (:include_inactive = true or is_active = true)
+                order by option_group, label
+                """
+            ),
+            {"option_group": option_group, "include_inactive": include_inactive},
+        ).mappings().all()
+        return [dict(row) for row in rows]
+
+    def create_reference_option(self, payload: Any) -> dict[str, Any]:
+        data = _payload_all(payload)
+        row_id = self.session.execute(
+            text(
+                """
+                insert into app.reference_options (
+                    option_group,
+                    option_key,
+                    label,
+                    description,
+                    metadata,
+                    is_system,
+                    is_active
+                )
+                values (
+                    :option_group,
+                    :option_key,
+                    :label,
+                    :description,
+                    cast(:metadata as jsonb),
+                    :is_system,
+                    :is_active
+                )
+                on conflict (option_group, option_key)
+                do update set
+                    label = excluded.label,
+                    description = excluded.description,
+                    metadata = excluded.metadata,
+                    is_system = excluded.is_system,
+                    is_active = excluded.is_active,
+                    updated_at = now()
+                returning id
+                """
+            ),
+            {**data, "metadata": _json(data.get("metadata", {}))},
+        ).scalar_one()
+        result = self.get_reference_option(row_id)
+        self.audit(entity_schema="app", entity_table="reference_options", entity_id=row_id, action="create", before=None, after=result)
+        self.session.commit()
+        return result
+
+    def get_reference_option(self, option_id: UUID) -> dict[str, Any] | None:
+        return _dict(
+            self.session.execute(
+                text(
+                    """
+                    select
+                        id,
+                        option_group,
+                        option_key,
+                        label,
+                        description,
+                        metadata,
+                        is_system,
+                        is_active,
+                        created_at,
+                        updated_at
+                    from app.reference_options
+                    where id = :id
+                    """
+                ),
+                {"id": option_id},
+            ).mappings().one_or_none()
+        )
+
+    def update_reference_option(self, option_id: UUID, payload: Any) -> dict[str, Any] | None:
+        before = self.get_reference_option(option_id)
+        if before is None:
+            return None
+        data = _payload(payload)
+        if "metadata" in data:
+            data["metadata"] = _json(data["metadata"])
+        if data:
+            self._update("app", "reference_options", option_id, data, jsonb_fields={"metadata"}, touch_updated_at=True)
+        after = self.get_reference_option(option_id)
+        self.audit(entity_schema="app", entity_table="reference_options", entity_id=option_id, action="update", before=before, after=after)
+        self.session.commit()
+        return after
+
+    def list_activity(self, *, limit: int = 100) -> list[dict[str, Any]]:
+        rows = self.session.execute(
+            text(
+                """
+                select *
+                from (
+                    select
+                        uploaded_at as occurred_at,
+                        'arquivo_importado' as event_type,
+                        status as action,
+                        original_filename as title,
+                        jsonb_build_object(
+                            'raw_file_id', id,
+                            'source_type', source_type,
+                            'detected_institution', detected_institution,
+                            'file_size_bytes', file_size_bytes
+                        ) as payload
+                    from bronze.raw_files
+                    union all
+                    select
+                        created_at as occurred_at,
+                        'lote_importacao' as event_type,
+                        status as action,
+                        source_type as title,
+                        jsonb_build_object(
+                            'import_batch_id', id,
+                            'raw_file_id', raw_file_id,
+                            'total_records', total_records,
+                            'valid_records', valid_records,
+                            'invalid_records', invalid_records,
+                            'error_message', error_message
+                        ) as payload
+                    from bronze.import_batches
+                    union all
+                    select
+                        created_at as occurred_at,
+                        'alteracao_manual' as event_type,
+                        action,
+                        entity_schema || '.' || entity_table as title,
+                        jsonb_build_object(
+                            'entity_id', entity_id,
+                            'reason', reason
+                        ) as payload
+                    from app.audit_logs
+                ) activity
+                order by occurred_at desc
+                limit :limit
+                """
+            ),
+            {"limit": limit},
+        ).mappings().all()
+        return [dict(row) for row in rows]
 
     def audit(
         self,
@@ -630,13 +965,20 @@ class ManualRepository:
                     asset_id,
                     institution,
                     product_name,
+                    product_id,
                     asset_class,
                     reference_date,
                     gross_value,
                     net_value,
                     liquidity,
+                    liquidity_type,
                     maturity_date,
                     rate_description,
+                    rate_type,
+                    rate_index,
+                    rate_percent,
+                    rate_spread,
+                    rate_periodicity,
                     counts_as_reserve,
                     notes,
                     created_at,
@@ -664,13 +1006,20 @@ class ManualRepository:
                     asset_id,
                     institution,
                     product_name,
+                    product_id,
                     asset_class,
                     reference_date,
                     gross_value,
                     net_value,
                     liquidity,
+                    liquidity_type,
                     maturity_date,
                     rate_description,
+                    rate_type,
+                    rate_index,
+                    rate_percent,
+                    rate_spread,
+                    rate_periodicity,
                     counts_as_reserve,
                     notes
                 )
@@ -678,13 +1027,20 @@ class ManualRepository:
                     :asset_id,
                     :institution,
                     :product_name,
+                    :product_id,
                     :asset_class,
                     :reference_date,
                     :gross_value,
                     :net_value,
                     :liquidity,
+                    :liquidity_type,
                     :maturity_date,
                     :rate_description,
+                    :rate_type,
+                    :rate_index,
+                    :rate_percent,
+                    :rate_spread,
+                    :rate_periodicity,
                     :counts_as_reserve,
                     :notes
                 )
@@ -693,13 +1049,20 @@ class ManualRepository:
                     asset_id,
                     institution,
                     product_name,
+                    product_id,
                     asset_class,
                     reference_date,
                     gross_value,
                     net_value,
                     liquidity,
+                    liquidity_type,
                     maturity_date,
                     rate_description,
+                    rate_type,
+                    rate_index,
+                    rate_percent,
+                    rate_spread,
+                    rate_periodicity,
                     counts_as_reserve,
                     notes,
                     created_at,
@@ -723,13 +1086,20 @@ class ManualRepository:
                         asset_id,
                         institution,
                         product_name,
+                        product_id,
                         asset_class,
                         reference_date,
                         gross_value,
                         net_value,
                         liquidity,
+                        liquidity_type,
                         maturity_date,
                         rate_description,
+                        rate_type,
+                        rate_index,
+                        rate_percent,
+                        rate_spread,
+                        rate_periodicity,
                         counts_as_reserve,
                         notes,
                         created_at,
@@ -767,7 +1137,18 @@ class ManualRepository:
         rows = self.session.execute(
             text(
                 """
-                select id, institution, card_name, brand, last_four_digits, credit_limit, is_active, created_at
+                select
+                    id,
+                    institution,
+                    institution_id,
+                    card_name,
+                    brand,
+                    brand_id,
+                    last_four_digits,
+                    credit_limit,
+                    is_virtual,
+                    is_active,
+                    created_at
                 from silver.cards
                 order by created_at desc, id desc
                 """
@@ -779,9 +1160,38 @@ class ManualRepository:
         row = self.session.execute(
             text(
                 """
-                insert into silver.cards (institution, card_name, brand, last_four_digits, credit_limit)
-                values (:institution, :card_name, :brand, :last_four_digits, :credit_limit)
-                returning id, institution, card_name, brand, last_four_digits, credit_limit, is_active, created_at
+                insert into silver.cards (
+                    institution,
+                    institution_id,
+                    card_name,
+                    brand,
+                    brand_id,
+                    last_four_digits,
+                    credit_limit,
+                    is_virtual
+                )
+                values (
+                    :institution,
+                    :institution_id,
+                    :card_name,
+                    :brand,
+                    :brand_id,
+                    :last_four_digits,
+                    :credit_limit,
+                    :is_virtual
+                )
+                returning
+                    id,
+                    institution,
+                    institution_id,
+                    card_name,
+                    brand,
+                    brand_id,
+                    last_four_digits,
+                    credit_limit,
+                    is_virtual,
+                    is_active,
+                    created_at
                 """
             ),
             _payload_all(payload),
@@ -796,7 +1206,18 @@ class ManualRepository:
             self.session.execute(
                 text(
                     """
-                    select id, institution, card_name, brand, last_four_digits, credit_limit, is_active, created_at
+                    select
+                        id,
+                        institution,
+                        institution_id,
+                        card_name,
+                        brand,
+                        brand_id,
+                        last_four_digits,
+                        credit_limit,
+                        is_virtual,
+                        is_active,
+                        created_at
                     from silver.cards
                     where id = :id
                     """
@@ -825,6 +1246,37 @@ class ManualRepository:
         self.audit(entity_schema="silver", entity_table="cards", entity_id=card_id, action="delete", before=before, after=None)
         self.session.commit()
         return True
+
+    def list_card_transactions(self, *, limit: int = 100) -> list[dict[str, Any]]:
+        rows = self.session.execute(
+            text(
+                """
+                select
+                    t.id,
+                    t.invoice_id,
+                    t.card_id,
+                    c.card_name,
+                    i.reference_month as invoice_reference_month,
+                    t.purchase_date,
+                    t.description_raw,
+                    t.amount,
+                    t.category_id,
+                    cat.name as category_name,
+                    t.installment_number,
+                    t.installment_total,
+                    t.is_installment,
+                    t.created_at
+                from silver.card_transactions t
+                join silver.card_invoices i on i.id = t.invoice_id
+                join silver.cards c on c.id = t.card_id
+                left join app.categories cat on cat.id = t.category_id
+                order by t.purchase_date desc, t.created_at desc, t.id desc
+                limit :limit
+                """
+            ),
+            {"limit": limit},
+        ).mappings().all()
+        return [dict(row) for row in rows]
 
     def list_card_invoices(self) -> list[dict[str, Any]]:
         rows = self.session.execute(

@@ -1,6 +1,7 @@
 from uuid import UUID
+from typing import Any
 
-from fastapi import APIRouter, Depends, HTTPException, Response, status
+from fastapi import APIRouter, Depends, HTTPException, Query, Response, status
 from sqlalchemy.orm import Session
 
 from app.api.dependencies import get_db_session
@@ -17,6 +18,9 @@ from app.schemas.manual import (
     CategorizationRuleUpdate,
     CategorizePreviewRequest,
     CategorizePreviewResponse,
+    InstitutionCreate,
+    InstitutionResponse,
+    InstitutionUpdate,
     GoalCreate,
     GoalResponse,
     GoalUpdate,
@@ -34,6 +38,9 @@ from app.schemas.manual import (
     ManualTransactionCreate,
     ManualTransactionResponse,
     ManualTransactionUpdate,
+    ReferenceOptionCreate,
+    ReferenceOptionResponse,
+    ReferenceOptionUpdate,
 )
 
 router = APIRouter(tags=["manual"])
@@ -41,6 +48,74 @@ router = APIRouter(tags=["manual"])
 
 def _not_found() -> None:
     raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Resource not found.")
+
+
+@router.get("/activity")
+def list_activity(
+    limit: int = Query(default=100, ge=1, le=500),
+    session: Session = Depends(get_db_session),
+) -> list[dict[str, Any]]:
+    return ManualRepository(session).list_activity(limit=limit)
+
+
+@router.get("/config/institutions", response_model=list[InstitutionResponse])
+def list_institutions(
+    include_inactive: bool = Query(default=False),
+    session: Session = Depends(get_db_session),
+) -> list[InstitutionResponse]:
+    return ManualRepository(session).list_institutions(include_inactive=include_inactive)
+
+
+@router.post("/config/institutions", response_model=InstitutionResponse, status_code=status.HTTP_201_CREATED)
+def create_institution(
+    payload: InstitutionCreate,
+    session: Session = Depends(get_db_session),
+) -> InstitutionResponse:
+    return ManualRepository(session).create_institution(payload)
+
+
+@router.patch("/config/institutions/{institution_id}", response_model=InstitutionResponse)
+def update_institution(
+    institution_id: UUID,
+    payload: InstitutionUpdate,
+    session: Session = Depends(get_db_session),
+) -> InstitutionResponse:
+    result = ManualRepository(session).update_institution(institution_id, payload)
+    if result is None:
+        _not_found()
+    return result
+
+
+@router.get("/config/options", response_model=list[ReferenceOptionResponse])
+def list_reference_options(
+    option_group: str | None = Query(default=None),
+    include_inactive: bool = Query(default=False),
+    session: Session = Depends(get_db_session),
+) -> list[ReferenceOptionResponse]:
+    return ManualRepository(session).list_reference_options(
+        option_group=option_group,
+        include_inactive=include_inactive,
+    )
+
+
+@router.post("/config/options", response_model=ReferenceOptionResponse, status_code=status.HTTP_201_CREATED)
+def create_reference_option(
+    payload: ReferenceOptionCreate,
+    session: Session = Depends(get_db_session),
+) -> ReferenceOptionResponse:
+    return ManualRepository(session).create_reference_option(payload)
+
+
+@router.patch("/config/options/{option_id}", response_model=ReferenceOptionResponse)
+def update_reference_option(
+    option_id: UUID,
+    payload: ReferenceOptionUpdate,
+    session: Session = Depends(get_db_session),
+) -> ReferenceOptionResponse:
+    result = ManualRepository(session).update_reference_option(option_id, payload)
+    if result is None:
+        _not_found()
+    return result
 
 
 @router.get("/manual/accounts", response_model=list[AccountResponse])
@@ -250,6 +325,14 @@ def delete_card(card_id: UUID, session: Session = Depends(get_db_session)) -> Re
 @router.get("/card-invoices", response_model=list[CardInvoiceResponse])
 def list_card_invoices(session: Session = Depends(get_db_session)) -> list[CardInvoiceResponse]:
     return ManualRepository(session).list_card_invoices()
+
+
+@router.get("/card-transactions", response_model=list[CardTransactionResponse])
+def list_card_transactions(
+    limit: int = Query(default=100, ge=1, le=500),
+    session: Session = Depends(get_db_session),
+) -> list[CardTransactionResponse]:
+    return ManualRepository(session).list_card_transactions(limit=limit)
 
 
 @router.post("/card-invoices", response_model=CardInvoiceResponse, status_code=status.HTTP_201_CREATED)

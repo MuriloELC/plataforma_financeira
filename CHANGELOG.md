@@ -1,5 +1,38 @@
 # CHANGELOG
 
+## 0.14.1 - B3 XLSX oficial
+
+- Corrigido parser B3 para aceitar XLSX oficial com dimensao interna declarada incorretamente como `A1`.
+- Parser B3 agora recalcula dimensoes da planilha quando necessario e localiza colunas por cabecalho normalizado.
+- Removidos indices fixos para proventos e negociacoes B3, reduzindo fragilidade a variacoes do layout oficial.
+- Adicionado teste que reproduz o XLSX oficial com dimensao `A1`.
+- Validacao oficial local aprovou 6 de 6 arquivos, incluindo B3 mensal e B3 anual, com refresh Gold bem-sucedido.
+- Validado `RUN_DB_TESTS=1 pytest` com 65 testes.
+
+## 0.14.0 - Melhorias de teste manual
+
+- Adicionada migration `20260625_0004_add_configuration_and_review_improvements` com `app.reference_options`, instituicoes unicas, campos estruturados de investimento e novos campos de cartao.
+- Criados endpoints de Config para instituicoes e opcoes reutilizaveis, com criar, editar e inativar.
+- Melhorado fluxo de importacao/revisao com escolha manual de source type, listagem de batches, detalhe/download de arquivo, aprovacao confirmada e recusa com motivo.
+- Corrigida soma de reserva no Gold para somar posicoes manuais distintas marcadas como reserva e ordenados compromissos futuros por vencimento crescente.
+- Adicionado historico geral de atividade e historico de compras de cartao.
+- Atualizada UI para labels em portugues, `% da carteira`, selects de instituicao/bandeira/produto/taxa/liquidez, resultado inline no simulador e menu Config.
+- Corrigido erro Next.js de chave duplicada no donut de alocacao.
+- Validado `RUN_DB_TESTS=1 pytest` com 65 testes, `next build` e navegacao automatizada em Chrome sem erros de console.
+
+## 0.13.0 - Validacao oficial local e UI BI
+
+- Protegida a pasta `arquivos_oficiais/` no `.gitignore`.
+- Criado `backend/scripts/validate_official_files_local.py` para validar arquivos oficiais localmente com `TestClient`, storage temporario e saida apenas agregada.
+- Adicionado fallback de deteccao por texto para PDFs Sicoob sem nome explicito.
+- Ajustado parser Sicoob de fatura para layouts com rotulos e valores em linhas separadas.
+- Ajustado parser Sicoob de investimentos para blocos oficiais por produto.
+- Mantida falha controlada para B3 quando o XLSX nao possui coluna monetaria segura para normalizacao.
+- Refatorado o frontend em componentes locais com abas internas por modulo e labels reais nos campos.
+- Transformado o Dashboard em visao BI com KPI cards, graficos SVG/CSS e tabelas compactas sem dependencia nova.
+- Adicionado icone local do app para evitar 404 de favicon em desenvolvimento.
+- Validado backend com 62 testes no container, build frontend, audit npm e navegacao Playwright desktop/mobile.
+
 ## 0.12.0 - Qualidade final do MVP
 
 - Adicionado mascaramento centralizado para CPF, conta e endereco em `backend/app/core/privacy.py`.

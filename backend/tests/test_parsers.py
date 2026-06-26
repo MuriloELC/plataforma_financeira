@@ -1,9 +1,13 @@
 import json
 import os
+from decimal import Decimal
 from pathlib import Path
+import re
 from uuid import UUID
+from zipfile import ZipFile
 
 import pytest
+from openpyxl import Workbook
 
 from app.parsers import (
     B3AnnualConsolidatedXlsxParser,
@@ -126,3 +130,126 @@ def test_parser_error_masks_sensitive_raw_reference() -> None:
     assert "***.***.***-**" in str(payload)
     assert "<mascarado>" in str(payload)
     assert "<endereco mascarado>" in str(payload)
+
+
+def test_b3_monthly_parser_accepts_official_bad_dimension_xlsx(tmp_path: Path) -> None:
+    workbook_path = tmp_path / "relatorio-consolidado-mensal-2026-maio.xlsx"
+    _write_b3_official_shape_workbook(workbook_path)
+    _force_xlsx_dimensions_to_a1(workbook_path)
+
+    document = B3MonthlyConsolidatedXlsxParser().parse(
+        workbook_path,
+        import_batch_id=IMPORT_BATCH_ID,
+        source_file_id=SOURCE_FILE_ID,
+    )
+
+    assert document.payload["reference_month"] == "2026-05"
+    assert document.payload["positions_by_class"] == {
+        "acao": Decimal("123.45"),
+        "etf": Decimal("50.55"),
+        "renda_fixa": Decimal("200.0"),
+    }
+    assert document.payload["income_received_total"] == Decimal("8.75")
+    assert document.payload["trades_count"] == 1
+    assert len(document.records) == 5
+
+
+def _write_b3_official_shape_workbook(path: Path) -> None:
+    workbook = Workbook()
+    actions = workbook.active
+    actions.title = "Posição - Ações"
+    actions.append(
+        [
+            "Produto",
+            "Instituição",
+            "Conta",
+            "Código de Negociação",
+            "CNPJ da Empresa",
+            "Código ISIN / Distribuição",
+            "Tipo",
+            "Escriturador",
+            "Quantidade",
+            "Quantidade Disponível",
+            "Quantidade Indisponível",
+            "Motivo",
+            "Preço de Fechamento",
+            "Valor Atualizado",
+        ]
+    )
+    actions.append(["ACAO3 - EMPRESA TESTE", "B3", "", "ACAO3", "", "", "", "", 1, 1, 0, "", 123.45, 123.45])
+
+    etf = workbook.create_sheet("Posição - ETF")
+    etf.append(
+        [
+            "Produto",
+            "Instituição",
+            "Conta",
+            "Código de Negociação",
+            "CNPJ do Fundo",
+            "Código ISIN / Distribuição",
+            "Tipo",
+            "Quantidade",
+            "Quantidade Disponível",
+            "Quantidade Indisponível",
+            "Motivo",
+            "Preço de Fechamento",
+            "Valor Atualizado",
+        ]
+    )
+    etf.append(["ETF11 - FUNDO TESTE", "B3", "", "ETF11", "", "", "", 1, 1, 0, "", 50.55, 50.55])
+
+    fixed_income = workbook.create_sheet("Posição - Renda Fixa")
+    fixed_income.append(
+        [
+            "Produto",
+            "Instituição",
+            "Emissor",
+            "Código",
+            "Indexador",
+            "Tipo de regime",
+            "Data de Emissão",
+            "Vencimento",
+            "Quantidade",
+            "Quantidade Disponível",
+            "Quantidade Indisponível",
+            "Motivo",
+            "Contraparte",
+            "Preço Atualizado MTM",
+            "Valor Atualizado MTM",
+            "Preço Atualizado CURVA",
+            "Valor Atualizado CURVA",
+        ]
+    )
+    fixed_income.append(["CDB - BANCO TESTE", "B3", "BANCO TESTE", "", "CDI", "", "", "", 1, 1, 0, "", "", 199.0, 199.0, 200.0, 200.0])
+
+    income = workbook.create_sheet("Proventos Recebidos")
+    income.append(["Produto", "Pagamento", "Tipo de Evento", "Instituição", "Quantidade", "Preço unitário", "Valor líquido"])
+    income.append(["ACAO3 - EMPRESA TESTE", "15/05/2026", "Dividendo", "B3", 1, 8.75, 8.75])
+
+    trades = workbook.create_sheet("Negociações")
+    trades.append(
+        [
+            "Código de Negociação",
+            "Período (Inicial)",
+            "Período (Final)",
+            "Instituição",
+            "Quantidade (Compra)",
+            "Quantidade (Venda)",
+            "Quantidade (Líquida)",
+            "Preço Médio (Compra)",
+            "Preço Médio (Venda)",
+        ]
+    )
+    trades.append(["ACAO3", "01/05/2026", "31/05/2026", "B3", 10, 0, 10, 12.34, 0])
+    workbook.save(path)
+
+
+def _force_xlsx_dimensions_to_a1(path: Path) -> None:
+    patched = path.with_suffix(".patched.xlsx")
+    with ZipFile(path, "r") as source, ZipFile(patched, "w") as target:
+        for item in source.infolist():
+            payload = source.read(item.filename)
+            if item.filename.startswith("xl/worksheets/sheet") and item.filename.endswith(".xml"):
+                payload = re.sub(b'<dimension ref="[^"]+"', b'<dimension ref="A1"', payload, count=1)
+            target.writestr(item, payload)
+    patched.replace(path)

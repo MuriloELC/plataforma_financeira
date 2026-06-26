@@ -71,3 +71,29 @@ def detect_source(filename: str, mime_type: str | None = None) -> SourceDetectio
         return SourceDetection(source_type="sicoob_pdf_unknown", detected_institution="sicoob")
 
     return SourceDetection(source_type="unsupported", detected_institution=None)
+
+
+def detect_sicoob_pdf_source_from_text(text: str) -> SourceDetection:
+    normalized = normalize_filename(text)
+
+    if (
+        "total de vencimentos" in normalized
+        and "liquido a receber" in normalized
+        and "fgts do mes" in normalized
+    ):
+        return SourceDetection(source_type="sicoob_payroll_pdf", detected_institution="sicoob")
+
+    if (
+        "total da divida a vencer" in normalized
+        or "pagamento minimo" in normalized
+        or "parcelas para a proxima fatura" in normalized
+    ):
+        return SourceDetection(source_type="sicoob_card_invoice_pdf", detected_institution="sicoob")
+
+    if "saldo final" in normalized and "valor bruto" in normalized and "valor liquido" in normalized:
+        return SourceDetection(source_type="sicoob_investments_pdf", detected_institution="sicoob")
+
+    if "data historico valor" in normalized or "lancamentos futuros" in normalized or "saldo em conta" in normalized:
+        return SourceDetection(source_type="sicoob_checking_statement_pdf", detected_institution="sicoob")
+
+    return SourceDetection(source_type="sicoob_pdf_unknown", detected_institution="sicoob")

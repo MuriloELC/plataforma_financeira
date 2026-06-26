@@ -15,8 +15,13 @@ from sqlalchemy.orm import Session
 
 from app.core.config import Settings, get_settings
 from app.repositories.bronze_repository import BronzeRepository
-from app.schemas.ingestion import FileUploadResponse, ImportBatchDetail
-from app.services.source_detection import SUPPORTED_EXTENSIONS, detect_source
+from app.schemas.ingestion import FileUploadResponse, ImportBatchDetail, RawFileDetail
+from app.services.source_detection import (
+    SUPPORTED_EXTENSIONS,
+    SourceDetection,
+    detect_sicoob_pdf_source_from_text,
+    detect_source,
+)
 
 
 class BronzeIngestionError(Exception):
@@ -29,6 +34,30 @@ class UnsupportedFileTypeError(BronzeIngestionError):
 
 class UploadTooLargeError(BronzeIngestionError):
     pass
+
+
+SOURCE_TYPE_EXTENSIONS = {
+    "mercado_livre_account_statement_csv": ".csv",
+    "mercado_livre_manual_cdb_csv": ".csv",
+    "manual_investment_csv": ".csv",
+    "b3_monthly_consolidated_xlsx": ".xlsx",
+    "b3_annual_consolidated_xlsx": ".xlsx",
+    "sicoob_checking_statement_pdf": ".pdf",
+    "sicoob_card_invoice_pdf": ".pdf",
+    "sicoob_investments_pdf": ".pdf",
+    "sicoob_payroll_pdf": ".pdf",
+}
+
+SOURCE_TYPE_INSTITUTIONS = {
+    "mercado_livre_account_statement_csv": "mercado_livre",
+    "mercado_livre_manual_cdb_csv": "mercado_livre",
+    "b3_monthly_consolidated_xlsx": "b3",
+    "b3_annual_consolidated_xlsx": "b3",
+    "sicoob_checking_statement_pdf": "sicoob",
+    "sicoob_card_invoice_pdf": "sicoob",
+    "sicoob_investments_pdf": "sicoob",
+    "sicoob_payroll_pdf": "sicoob",
+}
 
 
 def _safe_error_message(exc: Exception) -> str:
@@ -55,6 +84,7 @@ class BronzeIngestionService:
         filename: str,
         content: bytes,
         mime_type: str | None,
+        source_type_override: str | None = None,
     ) -> FileUploadResponse:
         if not content:
             raise BronzeIngestionError("Uploaded file is empty.")
@@ -69,13 +99,21 @@ class BronzeIngestionService:
 
         file_hash = sha256(content).hexdigest()
         detection = detect_source(filename, mime_type=mime_type)
+        if extension == ".pdf" and detection.source_type == "sicoob_pdf_unknown":
+            detection = self._detect_pdf_source_from_content(content)
+        if source_type_override:
+            detection = self._source_detection_override(
+                source_type=source_type_override,
+                extension=extension,
+                fallback=detection,
+            )
         existing_raw_file = self.repository.find_raw_file_by_hash(file_hash)
 
         try:
             if existing_raw_file is not None:
                 batch = self.repository.create_import_batch(
                     raw_file_id=existing_raw_file["id"],
-                    source_type=existing_raw_file["source_type"] or detection.source_type,
+                    source_type=source_type_override or existing_raw_file["source_type"] or detection.source_type,
                     status="duplicate",
                     total_records=0,
                     valid_records=0,
@@ -88,6 +126,7 @@ class BronzeIngestionService:
                         "uploaded_filename": filename,
                         "sha256_hash": file_hash,
                         "import_batch_id": str(batch["id"]),
+                        "source_type_override": source_type_override,
                     },
                 )
                 self.session.commit()
@@ -111,6 +150,7 @@ class BronzeIngestionService:
                     "storage_kind": "local",
                     "hash_algorithm": "sha256",
                     "safe_filename": stored_path.name,
+                    "source_type_override": source_type_override,
                 },
             )
             self.repository.add_file_metadata(
@@ -121,6 +161,7 @@ class BronzeIngestionService:
                     "detected_institution": detection.detected_institution,
                     "file_extension": extension,
                     "mime_type": mime_type,
+                    "source_type_override": source_type_override,
                 },
             )
             batch = self.repository.create_import_batch(
@@ -176,6 +217,25 @@ class BronzeIngestionService:
     def list_raw_files(self, limit: int) -> list[dict[str, Any]]:
         return self.repository.list_raw_files(limit=limit)
 
+    def get_raw_file(self, raw_file_id: UUID) -> dict[str, Any] | None:
+        return self.repository.get_raw_file(raw_file_id)
+
+    def get_raw_file_detail(self, raw_file_id: UUID) -> RawFileDetail | None:
+        raw_file = self.repository.get_raw_file(raw_file_id)
+        if raw_file is None:
+            return None
+        batches = self.repository.list_import_batches_for_raw_file(raw_file_id)
+        raw_counts = self.repository.count_raw_records(batches[0]["id"]) if batches else {}
+        return RawFileDetail(**raw_file, import_batches=batches, raw_counts=raw_counts)
+
+    def list_import_batches(self, limit: int) -> list[ImportBatchDetail]:
+        details: list[ImportBatchDetail] = []
+        for batch in self.repository.list_import_batches(limit=limit):
+            detail = self.get_import_batch(batch["id"])
+            if detail is not None:
+                details.append(detail)
+        return details
+
     def get_import_batch(self, batch_id: UUID) -> ImportBatchDetail | None:
         batch = self.repository.get_import_batch(batch_id)
         if batch is None:
@@ -211,6 +271,25 @@ class BronzeIngestionService:
                 pages=self._extract_pdf_pages(content),
             )
         raise UnsupportedFileTypeError(f"Unsupported file extension: {extension}.")
+
+    def _source_detection_override(
+        self,
+        *,
+        source_type: str,
+        extension: str,
+        fallback: SourceDetection,
+    ) -> SourceDetection:
+        expected_extension = SOURCE_TYPE_EXTENSIONS.get(source_type)
+        if expected_extension is None:
+            raise UnsupportedFileTypeError(f"Unsupported source type: {source_type}.")
+        if expected_extension != extension:
+            raise UnsupportedFileTypeError(
+                f"Source type {source_type} expects {expected_extension}, got {extension}."
+            )
+        return SourceDetection(
+            source_type=source_type,
+            detected_institution=SOURCE_TYPE_INSTITUTIONS.get(source_type, fallback.detected_institution),
+        )
 
     def _extract_csv_rows(self, content: bytes) -> list[dict[str, Any]]:
         text = self._decode_text(content)
@@ -259,6 +338,18 @@ class BronzeIngestionService:
                 }
             )
         return pages
+
+    def _detect_pdf_source_from_content(self, content: bytes) -> SourceDetection:
+        try:
+            reader = PdfReader(BytesIO(content))
+            page_texts = []
+            for index, page in enumerate(reader.pages):
+                if index >= 4:
+                    break
+                page_texts.append(page.extract_text() or "")
+            return detect_sicoob_pdf_source_from_text("\n".join(page_texts))
+        except Exception:
+            return SourceDetection(source_type="sicoob_pdf_unknown", detected_institution="sicoob")
 
     def _decode_text(self, content: bytes) -> str:
         for encoding in ("utf-8-sig", "utf-8", "latin-1"):

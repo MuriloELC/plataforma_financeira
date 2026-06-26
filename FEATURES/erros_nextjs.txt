@@ -1,0 +1,368 @@
+Status: resolvido em 009.
+
+Correcao aplicada:
+- `allocationData` agora agrega labels duplicados antes de alimentar o donut.
+- `DonutChart` e `BarChart` usam chave composta com indice.
+- Validacao em Chrome/Playwright nao reportou `Encountered two children with the same key`.
+
+## Error Type
+Console Error
+
+## Error Message
+Encountered two children with the same key, `cdb`. Keys should be unique so that components maintain their identity across updates. Non-unique keys may cause children to be duplicated and/or omitted — the behavior is unsupported and could change in a future version.
+
+
+    at circle (<anonymous>:null:null)
+    at <unknown> (app/page.tsx:1405:13)
+    at Array.map (<anonymous>:null:null)
+    at DonutChart (app/page.tsx:1402:15)
+    at Home (app/page.tsx:604:17)
+
+## Code Frame
+  1403 |           const share = (point.value / total) * 100;
+  1404 |           const segment = (
+> 1405 |             <circle
+       |             ^
+  1406 |               className="donut-segment"
+  1407 |               cx="80"
+  1408 |               cy="80"
+
+Next.js version: 16.2.9 (Turbopack)
+
+---
+
+## Error Type
+Console Error
+
+## Error Message
+Encountered two children with the same key, `cdb`. Keys should be unique so that components maintain their identity across updates. Non-unique keys may cause children to be duplicated and/or omitted — the behavior is unsupported and could change in a future version.
+
+
+    at div (<anonymous>:null:null)
+    at <unknown> (app/page.tsx:1426:11)
+    at Array.map (<anonymous>:null:null)
+    at DonutChart (app/page.tsx:1425:15)
+    at Home (app/page.tsx:604:17)
+
+## Code Frame
+  1424 |       <div className="donut-legend">
+  1425 |         {data.map((point, index) => (
+> 1426 |           <div key={point.label}>
+       |           ^
+  1427 |             <span style={{ background: colors[index % colors.length] }} />
+  1428 |             <strong>{point.label}</strong>
+  1429 |             <small>{percent((point.value / total) * 100)}</small>
+
+Next.js version: 16.2.9 (Turbopack)
+
+---
+
+## Error Type
+Console Error
+
+## Error Message
+Encountered two children with the same key, `cdb`. Keys should be unique so that components maintain their identity across updates. Non-unique keys may cause children to be duplicated and/or omitted — the behavior is unsupported and could change in a future version.
+
+
+    at circle (<anonymous>:null:null)
+    at <unknown> (app/page.tsx:1405:13)
+    at Array.map (<anonymous>:null:null)
+    at DonutChart (app/page.tsx:1402:15)
+    at Home (app/page.tsx:604:17)
+
+## Code Frame
+  1403 |           const share = (point.value / total) * 100;
+  1404 |           const segment = (
+> 1405 |             <circle
+       |             ^
+  1406 |               className="donut-segment"
+  1407 |               cx="80"
+  1408 |               cy="80"
+
+Next.js version: 16.2.9 (Turbopack)
+
+---
+
+## Error Type
+Console Error
+
+## Error Message
+Encountered two children with the same key, `cdb`. Keys should be unique so that components maintain their identity across updates. Non-unique keys may cause children to be duplicated and/or omitted — the behavior is unsupported and could change in a future version.
+
+
+    at div (<anonymous>:null:null)
+    at <unknown> (app/page.tsx:1426:11)
+    at Array.map (<anonymous>:null:null)
+    at DonutChart (app/page.tsx:1425:15)
+    at Home (app/page.tsx:604:17)
+
+## Code Frame
+  1424 |       <div className="donut-legend">
+  1425 |         {data.map((point, index) => (
+> 1426 |           <div key={point.label}>
+       |           ^
+  1427 |             <span style={{ background: colors[index % colors.length] }} />
+  1428 |             <strong>{point.label}</strong>
+  1429 |             <small>{percent((point.value / total) * 100)}</small>
+
+Next.js version: 16.2.9 (Turbopack)
+
+---
+
+## Error Type
+Console Error
+
+## Error Message
+Encountered two children with the same key, `cdb`. Keys should be unique so that components maintain their identity across updates. Non-unique keys may cause children to be duplicated and/or omitted — the behavior is unsupported and could change in a future version.
+
+
+    at circle (<anonymous>:null:null)
+    at <unknown> (app/page.tsx:1405:13)
+    at Array.map (<anonymous>:null:null)
+    at DonutChart (app/page.tsx:1402:15)
+    at Home (app/page.tsx:604:17)
+
+## Code Frame
+  1403 |           const share = (point.value / total) * 100;
+  1404 |           const segment = (
+> 1405 |             <circle
+       |             ^
+  1406 |               className="donut-segment"
+  1407 |               cx="80"
+  1408 |               cy="80"
+
+Next.js version: 16.2.9 (Turbopack)
+
+---
+
+## Error Type
+Console Error
+
+## Error Message
+Encountered two children with the same key, `cdb`. Keys should be unique so that components maintain their identity across updates. Non-unique keys may cause children to be duplicated and/or omitted — the behavior is unsupported and could change in a future version.
+
+
+    at div (<anonymous>:null:null)
+    at <unknown> (app/page.tsx:1426:11)
+    at Array.map (<anonymous>:null:null)
+    at DonutChart (app/page.tsx:1425:15)
+    at Home (app/page.tsx:604:17)
+
+## Code Frame
+  1424 |       <div className="donut-legend">
+  1425 |         {data.map((point, index) => (
+> 1426 |           <div key={point.label}>
+       |           ^
+  1427 |             <span style={{ background: colors[index % colors.length] }} />
+  1428 |             <strong>{point.label}</strong>
+  1429 |             <small>{percent((point.value / total) * 100)}</small>
+
+Next.js version: 16.2.9 (Turbopack)
+
+---
+
+## Error Type
+Console Error
+
+## Error Message
+Encountered two children with the same key, `cdb`. Keys should be unique so that components maintain their identity across updates. Non-unique keys may cause children to be duplicated and/or omitted — the behavior is unsupported and could change in a future version.
+
+
+    at circle (<anonymous>:null:null)
+    at <unknown> (app/page.tsx:1405:13)
+    at Array.map (<anonymous>:null:null)
+    at DonutChart (app/page.tsx:1402:15)
+    at Home (app/page.tsx:604:17)
+
+## Code Frame
+  1403 |           const share = (point.value / total) * 100;
+  1404 |           const segment = (
+> 1405 |             <circle
+       |             ^
+  1406 |               className="donut-segment"
+  1407 |               cx="80"
+  1408 |               cy="80"
+
+Next.js version: 16.2.9 (Turbopack)
+
+---
+
+## Error Type
+Console Error
+
+## Error Message
+Encountered two children with the same key, `cdb`. Keys should be unique so that components maintain their identity across updates. Non-unique keys may cause children to be duplicated and/or omitted — the behavior is unsupported and could change in a future version.
+
+
+    at div (<anonymous>:null:null)
+    at <unknown> (app/page.tsx:1426:11)
+    at Array.map (<anonymous>:null:null)
+    at DonutChart (app/page.tsx:1425:15)
+    at Home (app/page.tsx:604:17)
+
+## Code Frame
+  1424 |       <div className="donut-legend">
+  1425 |         {data.map((point, index) => (
+> 1426 |           <div key={point.label}>
+       |           ^
+  1427 |             <span style={{ background: colors[index % colors.length] }} />
+  1428 |             <strong>{point.label}</strong>
+  1429 |             <small>{percent((point.value / total) * 100)}</small>
+
+Next.js version: 16.2.9 (Turbopack)
+
+---
+
+## Error Type
+Console Error
+
+## Error Message
+Encountered two children with the same key, `cdb`. Keys should be unique so that components maintain their identity across updates. Non-unique keys may cause children to be duplicated and/or omitted — the behavior is unsupported and could change in a future version.
+
+
+    at circle (<anonymous>:null:null)
+    at <unknown> (app/page.tsx:1405:13)
+    at Array.map (<anonymous>:null:null)
+    at DonutChart (app/page.tsx:1402:15)
+    at Home (app/page.tsx:1115:19)
+
+## Code Frame
+  1403 |           const share = (point.value / total) * 100;
+  1404 |           const segment = (
+> 1405 |             <circle
+       |             ^
+  1406 |               className="donut-segment"
+  1407 |               cx="80"
+  1408 |               cy="80"
+
+Next.js version: 16.2.9 (Turbopack)
+
+---
+
+## Error Type
+Console Error
+
+## Error Message
+Encountered two children with the same key, `cdb`. Keys should be unique so that components maintain their identity across updates. Non-unique keys may cause children to be duplicated and/or omitted — the behavior is unsupported and could change in a future version.
+
+
+    at div (<anonymous>:null:null)
+    at <unknown> (app/page.tsx:1426:11)
+    at Array.map (<anonymous>:null:null)
+    at DonutChart (app/page.tsx:1425:15)
+    at Home (app/page.tsx:1115:19)
+
+## Code Frame
+  1424 |       <div className="donut-legend">
+  1425 |         {data.map((point, index) => (
+> 1426 |           <div key={point.label}>
+       |           ^
+  1427 |             <span style={{ background: colors[index % colors.length] }} />
+  1428 |             <strong>{point.label}</strong>
+  1429 |             <small>{percent((point.value / total) * 100)}</small>
+
+Next.js version: 16.2.9 (Turbopack)
+
+---
+
+## Error Type
+Console Error
+
+## Error Message
+Encountered two children with the same key, `cdb`. Keys should be unique so that components maintain their identity across updates. Non-unique keys may cause children to be duplicated and/or omitted — the behavior is unsupported and could change in a future version.
+
+
+    at circle (<anonymous>:null:null)
+    at <unknown> (app/page.tsx:1405:13)
+    at Array.map (<anonymous>:null:null)
+    at DonutChart (app/page.tsx:1402:15)
+    at Home (app/page.tsx:1115:19)
+
+## Code Frame
+  1403 |           const share = (point.value / total) * 100;
+  1404 |           const segment = (
+> 1405 |             <circle
+       |             ^
+  1406 |               className="donut-segment"
+  1407 |               cx="80"
+  1408 |               cy="80"
+
+Next.js version: 16.2.9 (Turbopack)
+
+---
+
+## Error Type
+Console Error
+
+## Error Message
+Encountered two children with the same key, `cdb`. Keys should be unique so that components maintain their identity across updates. Non-unique keys may cause children to be duplicated and/or omitted — the behavior is unsupported and could change in a future version.
+
+
+    at div (<anonymous>:null:null)
+    at <unknown> (app/page.tsx:1426:11)
+    at Array.map (<anonymous>:null:null)
+    at DonutChart (app/page.tsx:1425:15)
+    at Home (app/page.tsx:1115:19)
+
+## Code Frame
+  1424 |       <div className="donut-legend">
+  1425 |         {data.map((point, index) => (
+> 1426 |           <div key={point.label}>
+       |           ^
+  1427 |             <span style={{ background: colors[index % colors.length] }} />
+  1428 |             <strong>{point.label}</strong>
+  1429 |             <small>{percent((point.value / total) * 100)}</small>
+
+Next.js version: 16.2.9 (Turbopack)
+
+---
+
+## Error Type
+Console Error
+
+## Error Message
+Encountered two children with the same key, `cdb`. Keys should be unique so that components maintain their identity across updates. Non-unique keys may cause children to be duplicated and/or omitted — the behavior is unsupported and could change in a future version.
+
+
+    at circle (<anonymous>:null:null)
+    at <unknown> (app/page.tsx:1405:13)
+    at Array.map (<anonymous>:null:null)
+    at DonutChart (app/page.tsx:1402:15)
+    at Home (app/page.tsx:1115:19)
+
+## Code Frame
+  1403 |           const share = (point.value / total) * 100;
+  1404 |           const segment = (
+> 1405 |             <circle
+       |             ^
+  1406 |               className="donut-segment"
+  1407 |               cx="80"
+  1408 |               cy="80"
+
+Next.js version: 16.2.9 (Turbopack)
+
+---
+
+## Error Type
+Console Error
+
+## Error Message
+Encountered two children with the same key, `cdb`. Keys should be unique so that components maintain their identity across updates. Non-unique keys may cause children to be duplicated and/or omitted — the behavior is unsupported and could change in a future version.
+
+
+    at div (<anonymous>:null:null)
+    at <unknown> (app/page.tsx:1426:11)
+    at Array.map (<anonymous>:null:null)
+    at DonutChart (app/page.tsx:1425:15)
+    at Home (app/page.tsx:1115:19)
+
+## Code Frame
+  1424 |       <div className="donut-legend">
+  1425 |         {data.map((point, index) => (
+> 1426 |           <div key={point.label}>
+       |           ^
+  1427 |             <span style={{ background: colors[index % colors.length] }} />
+  1428 |             <strong>{point.label}</strong>
+  1429 |             <small>{percent((point.value / total) * 100)}</small>
+
+Next.js version: 16.2.9 (Turbopack)

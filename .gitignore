@@ -22,6 +22,7 @@ data/private/
 .DS_Store
 
 # Dados financeiros reais nunca devem ser versionados
+arquivos_oficiais/
 fixtures/private/
 data/private/
 data/raw/

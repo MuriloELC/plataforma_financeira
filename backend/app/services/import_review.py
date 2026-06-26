@@ -14,7 +14,7 @@ from app.parsers.registry import parser_for_source_type
 from app.parsers.utils import normalize_text
 from app.repositories.bronze_repository import BronzeRepository
 from app.repositories.silver_repository import SilverRepository
-from app.schemas.import_review import ImportApprovalResponse
+from app.schemas.import_review import ImportApprovalResponse, ImportRejectResponse
 
 
 class ImportReviewError(Exception):
@@ -66,6 +66,7 @@ class ImportReviewService:
         )
         parser_name = parser_for_source_type(batch["source_type"]).__class__.__name__  # type: ignore[union-attr]
         self.bronze_repository.mark_import_batch_parser(batch_id=batch_id, parser_name=parser_name)
+        self.bronze_repository.update_raw_file_status(raw_file["id"], "approved_to_silver")
         self.session.commit()
 
         return ImportApprovalResponse(
@@ -75,6 +76,26 @@ class ImportReviewService:
             parser_name=parser_name,
             status="approved_to_silver",
             silver_counts=dict(counts),
+        )
+
+    def reject_import(self, batch_id: UUID, *, reason: str | None = None) -> ImportRejectResponse:
+        batch, raw_file = self._load_batch_and_raw_file(batch_id)
+        self.bronze_repository.finish_import_batch(
+            batch_id=batch_id,
+            status="rejected",
+            total_records=batch["total_records"],
+            valid_records=0,
+            invalid_records=batch["total_records"],
+            error_message=reason,
+        )
+        self.bronze_repository.update_raw_file_status(raw_file["id"], "rejected")
+        self.session.commit()
+        return ImportRejectResponse(
+            import_batch_id=batch["id"],
+            raw_file_id=raw_file["id"],
+            source_type=batch["source_type"],
+            status="rejected",
+            reason=reason,
         )
 
     def _load_batch_and_raw_file(self, batch_id: UUID) -> tuple[dict[str, Any], dict[str, Any]]:
@@ -90,7 +111,7 @@ class ImportReviewService:
         match document.source_type:
             case "mercado_livre_account_statement_csv":
                 return self._normalize_mercado_livre_statement(document)
-            case "manual_investment_csv":
+            case "manual_investment_csv" | "mercado_livre_manual_cdb_csv":
                 return self._normalize_manual_investment(document)
             case "b3_monthly_consolidated_xlsx" | "b3_annual_consolidated_xlsx":
                 return self._normalize_b3(document)

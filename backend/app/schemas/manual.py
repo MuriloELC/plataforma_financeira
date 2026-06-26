@@ -25,6 +25,52 @@ class AccountResponse(AccountCreate):
     created_at: datetime
 
 
+class InstitutionCreate(BaseModel):
+    name: str = Field(min_length=1)
+    institution_type: str = "other"
+    country: str = "BR"
+    metadata: dict[str, Any] = Field(default_factory=dict)
+    is_active: bool = True
+
+
+class InstitutionUpdate(BaseModel):
+    name: str | None = Field(default=None, min_length=1)
+    institution_type: str | None = None
+    country: str | None = None
+    metadata: dict[str, Any] | None = None
+    is_active: bool | None = None
+
+
+class InstitutionResponse(InstitutionCreate):
+    id: UUID
+    created_at: datetime
+
+
+class ReferenceOptionCreate(BaseModel):
+    option_group: str = Field(min_length=1)
+    option_key: str = Field(min_length=1)
+    label: str = Field(min_length=1)
+    description: str | None = None
+    metadata: dict[str, Any] = Field(default_factory=dict)
+    is_system: bool = False
+    is_active: bool = True
+
+
+class ReferenceOptionUpdate(BaseModel):
+    option_key: str | None = Field(default=None, min_length=1)
+    label: str | None = Field(default=None, min_length=1)
+    description: str | None = None
+    metadata: dict[str, Any] | None = None
+    is_system: bool | None = None
+    is_active: bool | None = None
+
+
+class ReferenceOptionResponse(ReferenceOptionCreate):
+    id: UUID
+    created_at: datetime
+    updated_at: datetime
+
+
 class CategoryCreate(BaseModel):
     name: str
     type: str
@@ -151,6 +197,13 @@ class ManualInvestmentCreate(BaseModel):
     liquidity: str | None = None
     maturity_date: date | None = None
     rate_description: str | None = None
+    product_id: UUID | None = None
+    rate_type: str | None = None
+    rate_index: str | None = None
+    rate_percent: Decimal | None = None
+    rate_spread: Decimal | None = None
+    rate_periodicity: str | None = None
+    liquidity_type: str | None = None
     counts_as_reserve: bool = False
     notes: str | None = None
 
@@ -165,6 +218,13 @@ class ManualInvestmentUpdate(BaseModel):
     liquidity: str | None = None
     maturity_date: date | None = None
     rate_description: str | None = None
+    product_id: UUID | None = None
+    rate_type: str | None = None
+    rate_index: str | None = None
+    rate_percent: Decimal | None = None
+    rate_spread: Decimal | None = None
+    rate_periodicity: str | None = None
+    liquidity_type: str | None = None
     counts_as_reserve: bool | None = None
     notes: str | None = None
 
@@ -178,18 +238,24 @@ class ManualInvestmentResponse(ManualInvestmentCreate):
 
 class CardCreate(BaseModel):
     institution: str
+    institution_id: UUID | None = None
     card_name: str
     brand: str | None = None
+    brand_id: UUID | None = None
     last_four_digits: str | None = None
     credit_limit: Decimal | None = None
+    is_virtual: bool = False
 
 
 class CardUpdate(BaseModel):
     institution: str | None = None
+    institution_id: UUID | None = None
     card_name: str | None = None
     brand: str | None = None
+    brand_id: UUID | None = None
     last_four_digits: str | None = None
     credit_limit: Decimal | None = None
+    is_virtual: bool | None = None
     is_active: bool | None = None
 
 
@@ -246,5 +312,8 @@ class CardTransactionResponse(CardTransactionCreate):
     id: UUID
     invoice_id: UUID
     card_id: UUID
+    card_name: str | None = None
+    category_name: str | None = None
+    invoice_reference_month: date | None = None
     is_installment: bool
     created_at: datetime

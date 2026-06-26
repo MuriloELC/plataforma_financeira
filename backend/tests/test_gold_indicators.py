@@ -250,6 +250,7 @@ def test_gold_refresh_calculates_required_indicators(client: TestClient) -> None
 
     commitments = client.get("/gold/future-commitments").json()
     assert len(commitments) == 2
+    assert [item["due_month"] for item in commitments] == sorted(item["due_month"] for item in commitments)
     context = client.get("/gold/decision-context").json()[0]
     assert d(context["minimum_monthly_contribution"]) == Decimal("300.00")
     assert d(context["future_commitments_next_month"]) == Decimal("150.00")
@@ -257,6 +258,58 @@ def test_gold_refresh_calculates_required_indicators(client: TestClient) -> None
     alert = client.get("/gold/alerts").json()[0]
     assert alert["alert_type"] == "minimum_contribution"
     assert alert["severity"] == "info"
+
+
+def test_gold_refresh_sums_distinct_manual_reserve_positions(client: TestClient) -> None:
+    seed_silver(include_contribution=True)
+
+    engine = create_database_engine()
+    with engine.begin() as connection:
+        cdb_asset_id = connection.execute(
+            text("select id from silver.investment_assets where asset_code = 'CDBMANUAL'")
+        ).scalar_one()
+        connection.execute(
+            text(
+                """
+                insert into silver.manual_investment_positions (
+                    asset_id,
+                    institution,
+                    product_name,
+                    asset_class,
+                    reference_date,
+                    gross_value,
+                    net_value,
+                    liquidity,
+                    counts_as_reserve
+                )
+                values (
+                    :asset_id,
+                    'Manual',
+                    'CDB Manual',
+                    'cdb',
+                    date '2026-06-30',
+                    2500.00,
+                    2500.00,
+                    'same_day',
+                    true
+                )
+                """
+            ),
+            {"asset_id": cdb_asset_id},
+        )
+
+    response = client.post("/gold/refresh", params={"reference_date": "2026-06-30"})
+    assert response.status_code == 200, response.text
+
+    reserve = client.get("/gold/reserve").json()[0]
+    assert d(reserve["eligible_reserve_amount"]) == Decimal("8500.00")
+
+    allocation = client.get("/gold/allocation").json()
+    cdb_reserve = [
+        item for item in allocation if item["asset_class"] == "cdb" and item["counts_as_reserve"]
+    ]
+    assert len(cdb_reserve) == 1
+    assert d(cdb_reserve[0]["amount"]) == Decimal("8500.00")
 
 
 def test_gold_refresh_warns_when_minimum_contribution_is_missing(client: TestClient) -> None:

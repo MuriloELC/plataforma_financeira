@@ -97,8 +97,13 @@ class GoldService:
         }
         if table_name not in allowed:
             raise ValueError("Invalid Gold table.")
+        order_by = {
+            "future_commitments": "due_month asc, description asc, created_at asc, id asc",
+            "portfolio_allocation": "reference_date desc, asset_class asc, counts_as_reserve desc, id desc",
+            "financial_alerts": "reference_date desc, severity desc, created_at desc, id desc",
+        }.get(table_name, "created_at desc, id desc")
         return self.repository.rows(
-            f"select * from gold.{table_name} order by created_at desc, id desc limit :limit",
+            f"select * from gold.{table_name} order by {order_by} limit :limit",
             {"limit": limit},
         )
 
@@ -162,11 +167,11 @@ class GoldService:
         manual = self.repository.scalar(
             """
             with latest as (
-                select distinct on (coalesce(asset_id, id), institution, product_name)
+                select distinct on (id)
                     coalesce(net_value, gross_value, 0) as amount
                 from silver.manual_investment_positions
                 where reference_date <= :reference_date
-                order by coalesce(asset_id, id), institution, product_name, reference_date desc, created_at desc
+                order by id, reference_date desc, created_at desc
             )
             select coalesce(sum(amount), 0) from latest
             """,
@@ -257,12 +262,12 @@ class GoldService:
         manual = self.repository.scalar(
             """
             with latest as (
-                select distinct on (coalesce(asset_id, id), institution, product_name)
+                select distinct on (id)
                     coalesce(net_value, gross_value, 0) as amount,
                     counts_as_reserve
                 from silver.manual_investment_positions
                 where reference_date <= :reference_date
-                order by coalesce(asset_id, id), institution, product_name, reference_date desc, created_at desc
+                order by id, reference_date desc, created_at desc
             )
             select coalesce(sum(amount), 0) from latest where counts_as_reserve = true
             """,
@@ -284,13 +289,13 @@ class GoldService:
                 order by p.asset_id, p.reference_date desc, p.created_at desc
             ),
             latest_manual as (
-                select distinct on (coalesce(asset_id, id), institution, product_name)
+                select distinct on (id)
                     asset_class,
                     coalesce(net_value, gross_value, 0) as amount,
                     counts_as_reserve
                 from silver.manual_investment_positions
                 where reference_date <= :reference_date
-                order by coalesce(asset_id, id), institution, product_name, reference_date desc, created_at desc
+                order by id, reference_date desc, created_at desc
             )
             select asset_class, counts_as_reserve, sum(amount) as amount
             from (

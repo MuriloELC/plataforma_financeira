@@ -291,20 +291,45 @@ class SicoobCardInvoicePdfParser(_SicoobPdfParser):
         )
 
     def _due_date(self, lines: list[str]) -> Any:
-        line = self._line_containing(lines, "VENCIMENTO")
-        match = re.search(r"(\d{1,2}\s+[A-Za-z]{3}\s+\d{4})", normalize_text(line))
-        if not match:
-            raise ParserError("missing_card_due_date", "Card invoice due date was not found.")
-        return parse_date(match.group(1))
+        for index, line in enumerate(lines):
+            if "vencimento" not in normalize_text(line):
+                continue
+            due_date = self._date_from_text(line)
+            if due_date is not None:
+                return due_date
+            for nearby in lines[index + 1 : index + 4]:
+                due_date = self._date_from_text(nearby)
+                if due_date is not None:
+                    return due_date
+        raise ParserError("missing_card_due_date", "Card invoice due date was not found.")
+
+    def _date_from_text(self, line: str) -> Any | None:
+        normalized = normalize_text(line)
+        for pattern in (r"\d{1,2}\s+[a-z]{3,}\s+\d{4}", r"\d{2}/\d{2}/\d{4}"):
+            match = re.search(pattern, normalized)
+            if match:
+                return parse_date(match.group(0))
+        return None
 
     def _amount_for_label(self, lines: list[str], label: str) -> Decimal:
-        line = self._line_containing(lines, label)
-        if normalize_text(label) == "total r$":
+        normalized_label = normalize_text(label)
+        for index, line in enumerate(lines):
+            if normalized_label not in normalize_text(line):
+                continue
             tokens = money_tokens(line)
-            if not tokens:
-                raise ParserError("missing_card_amount", "Card invoice amount was not found.")
-            return parse_decimal(tokens[0])
-        return last_money(line)
+            if tokens:
+                return parse_decimal(tokens[0] if normalized_label in {"total r$", "compras:"} else tokens[-1])
+
+            nearby_tokens: list[str] = []
+            for nearby in lines[index + 1 : index + 6]:
+                nearby_tokens.extend(money_tokens(nearby))
+            if not nearby_tokens:
+                continue
+            if normalized_label == "utilizado:" and len(nearby_tokens) > 1:
+                return parse_decimal(nearby_tokens[1])
+            return parse_decimal(nearby_tokens[0])
+
+        raise ParserError("missing_card_amount", f"Card invoice amount was not found for {label}.")
 
     def _purchases(
         self,
@@ -321,7 +346,10 @@ class SicoobCardInvoicePdfParser(_SicoobPdfParser):
             if not pattern.match(normalize_text(line).upper()):
                 continue
             body = line[7:]
-            amount = last_money(body)
+            tokens = money_tokens(body)
+            if not tokens:
+                continue
+            amount = parse_decimal(tokens[-1])
             due_date = self._due_date(lines)
             purchase_day = int(line[:2])
             purchase_month_token = normalize_text(line[3:6])
@@ -427,6 +455,10 @@ class SicoobInvestmentsPdfParser(_SicoobPdfParser):
         import_batch_id: UUID,
         source_file_id: UUID | None,
     ) -> tuple[list[dict[str, Any]], list[Any]]:
+        section_positions = self._positions_from_movement_sections(lines, import_batch_id, source_file_id)
+        if section_positions is not None:
+            return section_positions
+
         positions = []
         records = []
         for index, line in enumerate(lines):
@@ -457,9 +489,65 @@ class SicoobInvestmentsPdfParser(_SicoobPdfParser):
             raise ParserError("empty_investment_positions", "Investment statement has no positions.")
         return positions, records
 
+    def _positions_from_movement_sections(
+        self,
+        lines: list[str],
+        import_batch_id: UUID,
+        source_file_id: UUID | None,
+    ) -> tuple[list[dict[str, Any]], list[Any]] | None:
+        section_starts = [
+            index
+            for index, line in enumerate(lines)
+            if index + 1 < len(lines) and normalize_text(lines[index + 1]) == "data historico"
+        ]
+        if not section_starts:
+            return None
+
+        positions = []
+        records = []
+        for offset, start in enumerate(section_starts):
+            end = section_starts[offset + 1] if offset + 1 < len(section_starts) else len(lines)
+            product = lines[start]
+            section = lines[start:end]
+            saldo_final_index = next(
+                (index for index, item in enumerate(section) if "saldo final" in normalize_text(item)),
+                None,
+            )
+            if saldo_final_index is None:
+                continue
+            final_section = section[saldo_final_index + 1 : saldo_final_index + 8]
+            yield_section = section[saldo_final_index + 1 :]
+            data = {
+                "product": product,
+                "gross_value": self._section_amount(final_section, "Valor Bruto"),
+                "net_value": self._section_amount(final_section, "Valor Liquido"),
+                "period_gross_yield": self._section_amount(yield_section, "Rendimento Bruto"),
+                "counts_as_reserve": "referenciado di" in normalize_text(product),
+            }
+            positions.append(data)
+            records.append(
+                make_record(
+                    source_type=self.source_type,
+                    import_batch_id=import_batch_id,
+                    source_file_id=source_file_id,
+                    data=data,
+                    raw_reference={"raw_line": start + 1, "raw_text": product},
+                )
+            )
+
+        if not positions:
+            raise ParserError("empty_investment_positions", "Investment statement has no positions.")
+        return positions, records
+
     def _section_amount(self, section: list[str], label: str) -> Decimal:
         normalized_label = normalize_text(label)
-        for line in section:
+        for index, line in enumerate(section):
             if normalized_label in normalize_text(line):
-                return last_money(line)
+                tokens = money_tokens(line)
+                if tokens:
+                    return parse_decimal(tokens[-1])
+                for nearby in section[index + 1 : index + 4]:
+                    tokens = money_tokens(nearby)
+                    if tokens:
+                        return parse_decimal(tokens[-1])
         raise ParserError("missing_investment_amount", f"Missing investment amount for {label}.")

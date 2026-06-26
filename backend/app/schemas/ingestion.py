@@ -68,3 +68,8 @@ class FileUploadResponse(BaseModel):
 class ImportBatchDetail(ImportBatchSummary):
     raw_file: RawFileSummary
     raw_counts: RawContentCounts
+
+
+class RawFileDetail(RawFileSummary):
+    import_batches: list[ImportBatchSummary] = Field(default_factory=list)
+    raw_counts: RawContentCounts = Field(default_factory=RawContentCounts)

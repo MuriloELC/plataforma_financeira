@@ -110,6 +110,24 @@ Checklist:
 - arquivos protegidos?
 - nada real no Git?
 
+## Official Validation Steward
+
+Responsabilidade: validar arquivos oficiais reais sem expor dados sensiveis.
+
+Use quando: houver `arquivos_oficiais/`, validacao local com banco descartavel ou comparacao de parser com arquivo real.
+
+Entrada: SPEC, PARSER_CONTRACTS, fixture anonimizada equivalente e caminho local protegido.
+
+Saida: metricas agregadas, falhas por etapa/source_type e decisoes de parser sem nomes, hashes, conteudo ou valores reais.
+
+Checklist:
+- `arquivos_oficiais/` esta no `.gitignore`?
+- banco usado e descartavel?
+- storage e temporario?
+- saida e agregada?
+- falha B3 sem coluna monetaria nao vira valor inventado?
+- ajustes ficam dentro dos tipos previstos?
+
 ## Documentation Keeper
 
 Responsabilidade: documentação viva.

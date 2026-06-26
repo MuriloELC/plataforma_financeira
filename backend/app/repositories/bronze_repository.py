@@ -271,6 +271,58 @@ class BronzeRepository:
         ).mappings().one_or_none()
         return _as_dict(row)
 
+    def list_import_batches(self, limit: int) -> list[dict[str, Any]]:
+        rows = self.session.execute(
+            text(
+                """
+                select
+                    id,
+                    raw_file_id,
+                    source_type,
+                    status,
+                    parser_name,
+                    started_at,
+                    finished_at,
+                    total_records,
+                    valid_records,
+                    invalid_records,
+                    error_message,
+                    created_at
+                from bronze.import_batches
+                order by created_at desc, id desc
+                limit :limit
+                """
+            ),
+            {"limit": limit},
+        ).mappings().all()
+        return [dict(row) for row in rows]
+
+    def list_import_batches_for_raw_file(self, raw_file_id: UUID) -> list[dict[str, Any]]:
+        rows = self.session.execute(
+            text(
+                """
+                select
+                    id,
+                    raw_file_id,
+                    source_type,
+                    status,
+                    parser_name,
+                    started_at,
+                    finished_at,
+                    total_records,
+                    valid_records,
+                    invalid_records,
+                    error_message,
+                    created_at
+                from bronze.import_batches
+                where raw_file_id = :raw_file_id
+                order by created_at desc, id desc
+                """
+            ),
+            {"raw_file_id": raw_file_id},
+        ).mappings().all()
+        return [dict(row) for row in rows]
+
     def finish_import_batch(
         self,
         *,

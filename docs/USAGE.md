@@ -93,6 +93,24 @@ python scripts/validate_private_fixtures.py --source fixtures/private
 
 Nao versionar PDFs, CSVs, XLSX, dumps, `.env`, storage local ou logs com dados reais.
 
+## Validar arquivos oficiais locais
+
+Arquivos oficiais reais devem ficar em `arquivos_oficiais/`, que tambem esta ignorada no Git. Nao use `git add .` quando essa pasta existir.
+
+Fluxo recomendado com banco descartavel:
+
+```bash
+docker compose exec postgres psql -U finance_user -d postgres -c "DROP DATABASE IF EXISTS finance_decision_official_validation WITH (FORCE)"
+docker compose exec postgres psql -U finance_user -d postgres -c "CREATE DATABASE finance_decision_official_validation"
+docker compose exec -e DATABASE_URL=postgresql+psycopg://finance_user:change_me@postgres:5432/finance_decision_official_validation backend alembic upgrade head
+DATABASE_URL=postgresql+psycopg://finance_user:change_me@localhost:5432/finance_decision_official_validation python backend/scripts/validate_official_files_local.py --source arquivos_oficiais
+docker compose exec postgres psql -U finance_user -d postgres -c "DROP DATABASE IF EXISTS finance_decision_official_validation WITH (FORCE)"
+```
+
+A saida do script e JSON agregado por extensao, status HTTP, `source_type` e etapa. Ela nao imprime nome de arquivo, conteudo, hash, caminho local completo ou mensagem sensivel.
+
+Se um parser falhar, nao force valores. Ajuste somente layouts dentro dos tipos previstos ou mantenha a falha controlada por `source_type` ate existir fixture anonimizada e criterio claro.
+
 ## Fluxo principal do MVP
 
 1. Subir banco e backend com Docker Compose.

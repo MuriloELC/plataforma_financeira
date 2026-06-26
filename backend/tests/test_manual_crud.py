@@ -13,6 +13,8 @@ from app.main import create_app
 
 TABLES = (
     "app.audit_logs",
+    "app.reference_options",
+    "app.institutions",
     "app.categorization_rules",
     "app.goals",
     "app.categories",
@@ -124,6 +126,54 @@ def test_default_categories_and_categorization_rules_preview(client: TestClient)
     ) == 3
 
 
+def test_configuration_registries_can_create_edit_and_inactivate(client: TestClient) -> None:
+    institutions = client.get("/config/institutions")
+    assert institutions.status_code == 200
+    assert any(item["name"] == "Sicoob" for item in institutions.json())
+
+    created_institution = client.post(
+        "/config/institutions",
+        json={"name": "Banco Config", "institution_type": "bank"},
+    )
+    assert created_institution.status_code == 201, created_institution.text
+    institution_id = created_institution.json()["id"]
+
+    updated_institution = client.patch(
+        f"/config/institutions/{institution_id}",
+        json={"name": "Banco Config Editado", "is_active": False},
+    )
+    assert updated_institution.status_code == 200
+    assert updated_institution.json()["name"] == "Banco Config Editado"
+    assert updated_institution.json()["is_active"] is False
+
+    option = client.post(
+        "/config/options",
+        json={
+            "option_group": "investment_product",
+            "option_key": "cdb_teste",
+            "label": "CDB Teste",
+        },
+    )
+    assert option.status_code == 201, option.text
+    option_id = option.json()["id"]
+
+    updated_option = client.patch(
+        f"/config/options/{option_id}",
+        json={"label": "CDB Teste Editado", "is_active": False},
+    )
+    assert updated_option.status_code == 200
+    assert updated_option.json()["label"] == "CDB Teste Editado"
+    assert updated_option.json()["is_active"] is False
+
+    inactive_options = client.get("/config/options", params={"include_inactive": True})
+    assert inactive_options.status_code == 200
+    assert any(item["id"] == option_id for item in inactive_options.json())
+
+    assert scalar(
+        "select count(*) from app.audit_logs where entity_table in ('institutions', 'reference_options')"
+    ) == 4
+
+
 def test_accounts_and_manual_transactions_crud(client: TestClient) -> None:
     account = client.post(
         "/manual/accounts",
@@ -206,23 +256,43 @@ def test_goals_crud_writes_audit_logs(client: TestClient) -> None:
 
 
 def test_manual_investments_crud_preserves_reserve_flag(client: TestClient) -> None:
+    product = client.post(
+        "/config/options",
+        json={
+            "option_group": "investment_product",
+            "option_key": "cdb_ml",
+            "label": "CDB Mercado Livre",
+        },
+    )
+    assert product.status_code == 201, product.text
+    product_id = product.json()["id"]
+
     cdb = client.post(
         "/manual/investments",
         json={
             "institution": "Mercado Livre",
             "product_name": "CDB Mercado Livre",
+            "product_id": product_id,
             "asset_class": "cdb",
             "reference_date": "2026-06-30",
             "gross_value": "4052.64",
             "net_value": "4052.64",
             "liquidity": "same_day",
+            "liquidity_type": "daily",
             "maturity_date": "2028-06-12",
             "rate_description": "102% do CDI",
+            "rate_type": "post_fixed",
+            "rate_index": "cdi",
+            "rate_percent": "102.0000",
+            "rate_periodicity": "annual",
             "counts_as_reserve": True,
         },
     )
     assert cdb.status_code == 201, cdb.text
     cdb_id = cdb.json()["id"]
+    assert cdb.json()["product_id"] == product_id
+    assert cdb.json()["rate_type"] == "post_fixed"
+    assert cdb.json()["liquidity_type"] == "daily"
 
     pension = client.post(
         "/manual/investments",
@@ -260,18 +330,37 @@ def test_manual_investments_crud_preserves_reserve_flag(client: TestClient) -> N
 
 
 def test_cards_invoices_and_installments_crud(client: TestClient) -> None:
+    institution = client.post(
+        "/config/institutions",
+        json={"name": "Sicoob Teste", "institution_type": "bank"},
+    )
+    assert institution.status_code == 201, institution.text
+    institution_id = institution.json()["id"]
+    brand = client.post(
+        "/config/options",
+        json={"option_group": "card_brand", "option_key": "visa_teste", "label": "Visa Teste"},
+    )
+    assert brand.status_code == 201, brand.text
+    brand_id = brand.json()["id"]
+
     card = client.post(
         "/cards",
         json={
-            "institution": "Sicoob",
+            "institution": "Sicoob Teste",
+            "institution_id": institution_id,
             "card_name": "Cartao Manual",
-            "brand": "Visa",
+            "brand": "Visa Teste",
+            "brand_id": brand_id,
             "last_four_digits": "1234",
             "credit_limit": "5000.00",
+            "is_virtual": True,
         },
     )
     assert card.status_code == 201, card.text
     card_id = card.json()["id"]
+    assert card.json()["institution_id"] == institution_id
+    assert card.json()["brand_id"] == brand_id
+    assert card.json()["is_virtual"] is True
 
     invoice = client.post(
         "/card-invoices",
@@ -299,6 +388,11 @@ def test_cards_invoices_and_installments_crud(client: TestClient) -> None:
     )
     assert transaction.status_code == 201, transaction.text
     assert transaction.json()["is_installment"] is True
+
+    transactions = client.get("/card-transactions")
+    assert transactions.status_code == 200
+    assert len(transactions.json()) == 1
+    assert transactions.json()[0]["card_name"] == "Cartao Manual"
 
     assert scalar("select count(*) from silver.installments") == 3
     assert scalar("select coalesce(sum(installment_amount), 0) from silver.installments") == 300

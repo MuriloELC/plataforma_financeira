@@ -219,6 +219,55 @@ Validacao:
 - `npm run build` passa no frontend;
 - Playwright validou as abas principais, incluindo controles de categorizacao e cartoes.
 
+### Fase 11 - Validacao oficial local e UI BI
+Status: concluida
+
+Entregaveis:
+- `arquivos_oficiais/` protegido no `.gitignore`;
+- script `backend/scripts/validate_official_files_local.py` para validacao local agregada com `TestClient`;
+- fallback de deteccao por texto para PDFs Sicoob sem nome explicito;
+- parser Sicoob de fatura tolerante a rotulos de data/valores em linhas proximas;
+- parser Sicoob de investimentos tolerante a blocos oficiais por produto;
+- dashboard convertido em visao BI com KPI cards e graficos React/CSS/SVG sem dependencia nova;
+- `frontend/app/page.tsx` reorganizado em componentes locais `ModuleTabs`, `Field`, `KpiCard`, `LineChart`, `BarChart`, `DonutChart` e tabelas compactas;
+- modulos operacionais reorganizados em abas internas;
+- `docs/USAGE.md`, `CHANGELOG.md` e `AGENTS.md` atualizados com o fluxo seguro.
+
+Validacao:
+- `git status --short --ignored arquivos_oficiais` mostra a pasta como ignorada;
+- `pytest backend/tests/test_source_detection.py` passa com fallback Sicoob por texto;
+- `pytest backend/tests/test_parsers.py` passa com fixtures anonimizadas;
+- `docker compose exec -e RUN_DB_TESTS=1 backend pytest` passa com 62 testes;
+- `npm audit --omit=dev` passa sem vulnerabilidades;
+- `next build` passa no frontend;
+- Playwright validou dashboard BI, abas internas, labels visiveis, graficos renderizados e ausencia de erros de console;
+- validacao oficial em banco descartavel leu 6 arquivos, rejeitou 0 extensoes e aprovou 6 fluxos, incluindo B3 mensal e B3 anual.
+
+### Fase 12 - Melhorias de teste manual
+Status: concluida
+
+Entregaveis:
+- feature `FEATURES/009_melhorias.md` consolidada e marcada como implementada;
+- migration `20260625_0004_add_configuration_and_review_improvements`;
+- cadastro Config para instituicoes e opcoes auxiliares;
+- importacao com escolha manual de tipo/fonte, detalhe e download de arquivo;
+- revisao por lote selecionavel, previa detalhada, aprovacao com confirmacao e recusa com motivo;
+- Gold atualizando no carregamento da UI, reserva somando posicoes manuais distintas e compromissos futuros ordenados por vencimento;
+- investimentos com produto/classe/taxa/liquidez estruturados e `% da carteira`;
+- cartoes com instituicao, bandeira, ultimos 4 digitos, virtual e historico de compras;
+- simulador com resultado inline e historico interno;
+- Historico geral para uploads, batches e alteracoes manuais;
+- correcao do erro Next.js de chave duplicada no donut de alocacao.
+
+Validacao:
+- `.venv\Scripts\python.exe -m compileall backend/app` passa;
+- `docker compose exec backend alembic current` retorna `20260625_0004 (head)`;
+- `docker compose exec backend python scripts/check_schema.py` retorna `Database schema OK`;
+- `docker compose exec -e RUN_DB_TESTS=1 backend pytest` passa com 65 testes;
+- `cd frontend; .\node_modules\.bin\tsc.cmd --noEmit --incremental false` passa;
+- `npm run build` passa no frontend;
+- Chrome/Playwright validou Dashboard, Importacao, Revisao, Investimentos, Cartoes, Simulador e Config sem erros de console.
+
 ## Épico 0 — Bootstrap
 
 ### 0.1 Criar estrutura base

@@ -1,6 +1,6 @@
 import pytest
 
-from app.services.source_detection import detect_source
+from app.services.source_detection import detect_sicoob_pdf_source_from_text, detect_source
 
 
 @pytest.mark.parametrize(
@@ -26,3 +26,35 @@ def test_detect_source_for_mvp_fixtures(
 
     assert detection.source_type == source_type
     assert detection.detected_institution == institution
+
+
+@pytest.mark.parametrize(
+    ("text", "source_type"),
+    (
+        (
+            "Mes/Ano Total de Vencimentos Liquido a Receber FGTS do Mes",
+            "sicoob_payroll_pdf",
+        ),
+        (
+            "PERIODO: 01/06/2026 - 19/06/2026 Data Historico Valor SALDO EM CONTA",
+            "sicoob_checking_statement_pdf",
+        ),
+        (
+            "VENCIMENTO PAGAMENTO MINIMO TOTAL DA DIVIDA A VENCER PARCELAS PARA A PROXIMA FATURA",
+            "sicoob_card_invoice_pdf",
+        ),
+        (
+            "Periodo: 01/05/2026 a 31/05/2026 saldo final Valor Bruto: Valor Liquido:",
+            "sicoob_investments_pdf",
+        ),
+        (
+            "Documento Sicoob sem marcadores estruturais conhecidos",
+            "sicoob_pdf_unknown",
+        ),
+    ),
+)
+def test_detect_sicoob_pdf_source_from_text(text: str, source_type: str) -> None:
+    detection = detect_sicoob_pdf_source_from_text(text)
+
+    assert detection.source_type == source_type
+    assert detection.detected_institution == "sicoob"
